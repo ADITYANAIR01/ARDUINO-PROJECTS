@@ -7,4 +7,3 @@
 3. Go to tools board and select the board connected 
     * Node MCU 
 
-4. 
