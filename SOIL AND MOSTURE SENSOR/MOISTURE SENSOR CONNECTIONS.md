@@ -10,7 +10,7 @@ in to digital 3
 
 vcc to 5v
 gnd to gnd 
-do to d5
+dO to d5
 
 *     Soil sensor to Moisture sensor 
 
