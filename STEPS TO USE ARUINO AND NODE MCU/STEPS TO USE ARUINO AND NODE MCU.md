@@ -10,4 +10,5 @@
 
 4. Go to tools board and select the board connected 
     * Node MCU 
+(if COM PORT not detected try to replug the usb and see change in ports) 
 
