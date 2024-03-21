@@ -1,5 +1,4 @@
-// Define the analog pin connected to the MQ sensor
-const int MQ_PIN = A0;
+const int MQ_PIN = A0;  //pin A0
 
 void setup() {
   // Set the pin mode to INPUT
