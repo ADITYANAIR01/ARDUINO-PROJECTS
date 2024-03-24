@@ -22,7 +22,7 @@ https://espressif.github.io/arduino-esp32/package_esp32_index.json
      
   *   FOR NODE MCU (ESP 8266)
 
-1. Install esptool
+1. Install esptool (OPTIONAL)
     * pip install esptool
 
 2. Install CH340G DRIVERS 
@@ -34,4 +34,9 @@ https://espressif.github.io/arduino-esp32/package_esp32_index.json
     * Node MCU 
 (if COM PORT not detected try to replug the usb and see change in ports) 
 
+
 5. Go to device manager and verify the com port 
+
+6. VERIFY AND COMPILE CODE
+
+7. AFTER COMPILATION WHILE UPLOADING THE CODE HOLD DOWN THE BOOT BUTTON 
