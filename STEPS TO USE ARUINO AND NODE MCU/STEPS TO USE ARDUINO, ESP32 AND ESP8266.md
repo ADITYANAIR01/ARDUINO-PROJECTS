@@ -31,7 +31,7 @@ https://espressif.github.io/arduino-esp32/package_esp32_index.json
     * https://arduino.esp8266.com/stable/package_esp8266com_index.json 
 
 4. Go to tools board and select the board connected 
-    * Node MCU 
+    * Node MCU  0.9 (ESP 12 MODULE)
 (if COM PORT not detected try to replug the usb and see change in ports) 
 
 
