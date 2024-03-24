@@ -1,4 +1,6 @@
-  The basic information about this projet is in the folder (Topic) available in this repo .
+    IOT HACKATHON (HOME SECURITY SYSETMS)
+    
+The basic information about this projet is in the folder (Topic) available in this repo .
   
 * In this repository you will find the codes of individual sensors as well as the combined code.
 
@@ -13,6 +15,9 @@
 * Drivers to be installed are too given in the folder STEPS TO USE ARDUINO AND NODE MCU.
 
 * I have provided sample video too in the sample videos folder
+
+* FEEL FREE TO FORK OR CLONE THIS REPO TO HELP OUT :)
+
 
 HOPE THIS HELPS 
 
