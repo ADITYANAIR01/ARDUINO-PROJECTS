@@ -14,7 +14,7 @@ The basic information about this projet is in the folder (Topic) available in th
 
 * Drivers to be installed are too given in the folder STEPS TO USE ARDUINO AND NODE MCU.
 
-* I have provided sample video too in the sample videos folder
+* I have provided sample video too in the sample videos folder but you can't view it online you have to download the video  
 
 * FEEL FREE TO FORK OR CLONE THIS REPO TO HELP OUT :)
 
