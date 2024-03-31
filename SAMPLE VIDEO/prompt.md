@@ -827,7 +827,7 @@ Remember to set the correct baud rate (9600 in this example) in both codes and s
 
 
 
-              CHGPT CODE 2 
+              CHGPT CODE 2 (FIXING)
 
 
 // PROBLEM INVERTED IR SENSING
