@@ -823,3 +823,99 @@ Upload the ESP8266 code to the ESP8266 board.
 Open the Arduino serial monitor to see the sensor data formatted with the unique identifiers.
 Open the ESP8266 serial monitor to see only the data intended for the ESP8266.
 Remember to set the correct baud rate (9600 in this example) in both codes and serial monitors for successful communication.
+
+
+
+
+              CHGPT CODE 2 
+
+
+// PROBLEM INVERTED IR SENSING
+#include <DHT.h>
+
+#define DHTPIN 13
+#define DHTTYPE DHT11
+
+#define MQ2PIN A0
+#define SOILPIN A1
+#define IRPIN 2
+#define PIRPIN 3
+#define TRIGPIN 4
+#define ECHOPIN 5
+#define RELAY1 6
+#define RELAY2 7
+//#define SERVOPIN 8 // To be used later by RFID
+#define BUZZERPIN 9
+#define LEDPIN 10
+
+#define WATER_TANK_MAX_LEVEL 20 // in cm
+#define WATER_TANK_WARNING_LEVEL 17 // in cm
+
+DHT dht(DHTPIN, DHTTYPE);
+
+void setup() {
+  Serial.begin(9600);
+  
+  pinMode(PIRPIN, INPUT);
+  pinMode(IRPIN, INPUT);
+  pinMode(RELAY1, OUTPUT);
+  pinMode(RELAY2, OUTPUT);
+  pinMode(BUZZERPIN, OUTPUT);
+  pinMode(LEDPIN, OUTPUT);
+  
+  pinMode(TRIGPIN, OUTPUT);
+  pinMode(ECHOPIN, INPUT);
+
+  // Calibrating PIR sensor
+  Serial.println("Calibrating PIR sensor...");
+  delay(20000); // Calibrate for 20 seconds
+  Serial.println("PIR sensor calibrated.");
+}
+
+void loop() {
+  // Read DHT11 sensor
+  float temp = dht.readTemperature();
+  float humidity = dht.readHumidity();
+  Serial.print("DHT11: Temperature: ");
+  Serial.print(temp);
+  Serial.print("°C, Humidity: ");
+  Serial.print(humidity);
+  Serial.println("%");
+
+  // Read MQ2 gas sensor
+  int gas = analogRead(MQ2PIN);
+  Serial.print("MQ2: Gas Level: ");
+  Serial.println(gas);
+
+  // Read soil moisture sensor
+  int soil = analogRead(SOILPIN);
+  Serial.print("Soil Moisture: ");
+  Serial.println(soil);
+
+  // Read PIR motion sensor
+  int motion = digitalRead(PIRPIN);
+  Serial.print("Motion Detected: ");
+  Serial.println(motion ? "Yes" : "No");
+
+  // Read IR sensor
+  int door = digitalRead(IRPIN);
+  Serial.print("Door Status: ");
+  Serial.println(door ? "Closed" : "Open");
+
+  // Read ultrasonic sensor for water level
+  long duration, distance;
+  digitalWrite(TRIGPIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIGPIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIGPIN, LOW);
+  duration = pulseIn(ECHOPIN, HIGH);
+  distance = duration * 0.034 / 2;
+  if (distance != 0 && distance <= WATER_TANK_MAX_LEVEL) {
+    Serial.print("Water Level: ");
+    Serial.print(distance);
+    Serial.println(" cm");
+  }
+
+  delay(2000); // Wait for 2 seconds before next reading
+}
