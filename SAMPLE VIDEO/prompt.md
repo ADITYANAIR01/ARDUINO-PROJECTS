@@ -919,3 +919,118 @@ void loop() {
 
   delay(2000); // Wait for 2 seconds before next reading
 }
+
+
+              CHGPT CODE 2 (FIXED) (ARDUINO )
+
+#include <Arduino.h>
+#include <Adafruit_Sensor.h>
+#include <DHT.h>
+
+#define DHTPIN 13
+#define DHTTYPE DHT11
+
+#define MQ2PIN A0
+#define SOILPIN A1
+#define IRPIN 2
+#define PIRPIN 3
+#define TRIGPIN 4
+#define ECHOPIN 5
+#define RELAY1 6
+#define RELAY2 7
+//#define SERVOPIN 8 // To be used later by RFID
+#define BUZZERPIN 9
+#define LEDPIN 10
+
+#define WATER_TANK_MAX_LEVEL 20 // in cm
+#define WATER_TANK_WARNING_LEVEL 17 // in cm
+
+DHT dht(DHTPIN, DHTTYPE);
+
+float previousTemp = 0.0;
+
+void setup() {
+  Serial.begin(9600);
+  
+  pinMode(PIRPIN, INPUT);
+  pinMode(IRPIN, INPUT);
+  pinMode(RELAY1, OUTPUT);
+  pinMode(RELAY2, OUTPUT);
+  pinMode(BUZZERPIN, OUTPUT);
+  pinMode(LEDPIN, OUTPUT);
+  
+  pinMode(TRIGPIN, OUTPUT);
+  pinMode(ECHOPIN, INPUT);
+
+  // Calibrating PIR sensor
+  Serial.println("Calibrating PIR sensor...");
+  delay(20000); // Calibrate for 20 seconds
+  Serial.println("PIR sensor calibrated.");
+
+  // Adding delay for sensor stabilization
+  delay(2000); // Wait for 2 seconds
+}
+
+void loop() {
+  // Read DHT11 sensor
+  float temp = dht.readTemperature();
+  float humidity = dht.readHumidity();
+
+  // Check if temperature reading is valid
+  if (isnan(temp)) {
+    temp = previousTemp;
+  } else {
+    previousTemp = temp;
+  }
+
+  // Print temperature and humidity
+  Serial.print("DHT11: Temperature: ");
+  Serial.print(temp);
+  Serial.print("°C, Humidity: ");
+  Serial.print(humidity);
+  Serial.println("%");
+
+  // Read MQ2 gas sensor
+  int gas = analogRead(MQ2PIN);
+  Serial.print("MQ2: Gas Level: ");
+  Serial.println(gas);
+
+  // Buzzer buzz when gas reading is above 150 and temperature is above 20
+  if (gas > 150 && temp > 20) {
+    digitalWrite(BUZZERPIN, HIGH);
+  } else {
+    digitalWrite(BUZZERPIN, LOW);
+  }
+
+  // Read soil moisture sensor
+  int soil = analogRead(SOILPIN);
+  Serial.print("Soil Moisture: ");
+  Serial.println(soil);
+
+  // Read PIR motion sensor
+  int motion = digitalRead(PIRPIN);
+  Serial.print("Motion Detected: ");
+  Serial.println(motion ? "Yes" : "No");
+
+  // Read IR sensor with inverted reading
+  int door = !digitalRead(IRPIN);  // Invert the reading
+  Serial.print("Door Status: ");
+  Serial.println(door ? "Closed" : "Open");
+
+  // Read ultrasonic sensor for water level
+  long duration, distance;
+  digitalWrite(TRIGPIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIGPIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIGPIN, LOW);
+  duration = pulseIn(ECHOPIN, HIGH);
+  distance = duration * 0.034 / 2;
+  if (distance != 0 && distance <= WATER_TANK_MAX_LEVEL) {
+    Serial.print("Water Level: ");
+    Serial.print(distance);
+    Serial.println(" cm");
+  }
+
+  delay(2000); // Wait for 2 seconds before next reading
+}
