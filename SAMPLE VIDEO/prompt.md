@@ -188,4 +188,153 @@ additional info
 5. do not print unable to read from dht sensor 
 
 6. optimise the ir sensor for door opening and closing 
-7. update dht readings regularly and do not create previous dht reading in the code for this sensor and donty print temperature rising unless it 50 degrees
+7. update dht readings regularly and do not create previous dht reading in the code for this sensor and dont print temperature rising unless it 50 degrees
+
+
+                THE CODE OPTIMISED BY CHAT GPT 
+
+
+#include <DHT.h>
+
+const int DHTPin = 13;
+const int MQ2Pin = A0;
+const int soilMoisturePin = A1;
+const int IRsensorPin = 2;
+const int PIRsensorPin = 3;
+const int trigPin = 4;
+const int echoPin = 5;
+const int relay1Pin = 6;
+const int buzzerPin = 9;
+const int ledPin = 10;
+
+DHT dht(DHTPin, DHT11);
+
+int waterLevel = 0;
+int prevWaterLevel = 0;
+int prevMQ2Value = 0;
+int prevSoilMoisture = 0;
+unsigned long prevMillis = 0;
+
+const int GAS_THRESHOLD = 50; // Threshold for MQ2 sensor
+const int MOISTURE_THRESHOLD = 500; // Threshold for soil moisture
+const int HYSTERESIS = 100; // Hysteresis for soil moisture
+
+void setup() {
+  Serial.begin(9600);
+  
+  pinMode(MQ2Pin, INPUT);
+  pinMode(IRsensorPin, INPUT);
+  pinMode(PIRsensorPin, INPUT);
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  pinMode(relay1Pin, OUTPUT);
+  pinMode(buzzerPin, OUTPUT);
+  pinMode(ledPin, OUTPUT);
+
+  digitalWrite(relay1Pin, LOW);
+}
+
+void loop() {
+  int currentWaterLevel = measureWaterLevel();
+  int currentMQ2Value = analogRead(MQ2Pin);
+  int currentSoilMoisture = analogRead(soilMoisturePin);
+  bool motionDetected = debounce(PIRsensorPin);
+  int irValue = digitalRead(IRsensorPin);
+  float temp = dht.readTemperature();
+
+  Serial.print("Water Level: ");
+  Serial.print(currentWaterLevel);
+  Serial.println(" cm");
+
+  Serial.print("MQ-2 Reading: ");
+  Serial.println(currentMQ2Value);
+
+  Serial.print("Soil Moisture: ");
+  Serial.println(currentSoilMoisture);
+
+  Serial.print("Temperature: ");
+  Serial.print(temp);
+  Serial.println("°C");
+  
+  if (temp > 50) {
+    Serial.println("WARNING: Temperature exceeds 50°C!");
+    activateBuzzer(3000);
+  }
+
+  if (currentWaterLevel > prevWaterLevel) {
+    Serial.println("WARNING: Water level rising!");
+  }
+
+  if (abs(currentMQ2Value - prevMQ2Value) > GAS_THRESHOLD) {
+    Serial.println("WARNING: Gas level increasing!");
+    activateBuzzer(5000);
+  }
+
+  if (abs(currentSoilMoisture - prevSoilMoisture) > HYSTERESIS) {
+    if (currentSoilMoisture > MOISTURE_THRESHOLD) {
+      Serial.println("Soil is dry. Starting water pump.");
+      digitalWrite(relay1Pin, HIGH);
+      delay(1000); // Delay to ensure relay is activated
+    } else {
+      Serial.println("Soil is wet. Water pump turned off.");
+      digitalWrite(relay1Pin, LOW);
+      delay(1000); // Delay to ensure relay is deactivated
+    }
+  }
+
+  if (motionDetected) {
+    Serial.println("Motion detected!");
+    digitalWrite(ledPin, HIGH);
+    delay(5000);
+    digitalWrite(ledPin, LOW);
+  }
+
+  if (irValue == LOW) {
+    Serial.println("Door is closed.");
+  } else {
+    Serial.println("Door is open.");
+  }
+
+  prevWaterLevel = currentWaterLevel;
+  prevMQ2Value = currentMQ2Value;
+  prevSoilMoisture = currentSoilMoisture;
+
+  if (millis() - prevMillis >= 60000) { // Calibrate PIR sensor every minute
+    Serial.println("Calibrating PIR sensor...");
+    prevMillis = millis();
+  }
+
+  delay(2000); // Increase delay for displaying readings
+}
+
+int measureWaterLevel() {
+  long duration;
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  duration = pulseIn(echoPin, HIGH);
+  
+  int distance = duration * 0.034 / 2;
+  if (distance < 0 || distance > 300) {
+    Serial.println("Out of range for ultrasonic sensor.");
+    return 0;
+  }
+  return distance;
+}
+
+void activateBuzzer(int duration) {
+  tone(buzzerPin, 1000);
+  delay(duration);
+  noTone(buzzerPin);
+}
+
+bool debounce(int pin) {
+  static unsigned long lastDebounceTime = 0;
+  if (millis() - lastDebounceTime > 50) {
+    lastDebounceTime = millis();
+    return digitalRead(pin) == HIGH;
+  }
+  return false;
+}
