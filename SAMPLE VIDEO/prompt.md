@@ -662,26 +662,25 @@ void loop() {
 4. explain what is updated in code and in pin connection to establish serial communication .
 5. provide complete code with added communication functionalities for arduino 
 6. provide complete code with added communication functionalities for esp8266 
+7. how to do all this 
+8. provide full code for both
+
+
+                                                  CGPT 3.5 (TRIAL 1)
+
+To establish serial communication between an Arduino and an ESP8266, you can use the Serial interface (UART) available on both devices. Here's how you can achieve this:
+
+Arduino Code Updates:
+Serial Communication Setup:
+We'll use the Serial interface to communicate with the ESP8266.
+We'll send sensor readings to the ESP8266.
+We'll add a unique identifier before each sensor reading to easily identify the data.
+
+               
 
 
 
-
-
-                                                    CGPT(TRIAL 1)
-
-1. Include functionalities of serial communication from Arduino to ESP8266 via serial communication
-To establish serial communication between an Arduino and an ESP8266, you'll need to connect the TX (Transmit) pin of one device to the RX (Receive) pin of the other, and vice versa. This allows them to send and receive data to and from each other.
-
-2. Pin Connections Needed for Serial Communication
-Arduino to ESP8266 Connections:
-
-Arduino TX (Transmit) -> ESP8266 RX (Receive) (e.g., Arduino pin 1 to ESP8266 GPIO3)
-Arduino RX (Receive) -> ESP8266 TX (Transmit) (e.g., Arduino pin 0 to ESP8266 GPIO1)
-GND (Ground) -> GND (Ground) for common ground reference
-3. Updated Arduino Code for Serial Communication
-I'll modify the Arduino code to include serial communication functionality for sending sensor readings to the ESP8266:
-
-          arduino Copy code
+*              code  for   arduino   board 
 
 #include <DHT.h>
 
@@ -696,19 +695,20 @@ I'll modify the Arduino code to include serial communication functionality for s
 #define TRIGPIN2 5
 #define RELAY1 6
 #define RELAY2 7
+//#define SERVOPIN 8 // To be used later by RFID
 #define BUZZERPIN 9
 #define LEDPIN 10
 
-#define WATER_TANK_MAX_LEVEL 20
-#define WATER_TANK_WARNING_LEVEL 17
+#define WATER_TANK_MAX_LEVEL 20 // in cm
+#define WATER_TANK_WARNING_LEVEL 17 // in cm
 
 DHT dht(DHTPIN, DHTTYPE);
 
 int previousTemp = 0;
 int previousGas = 0;
 int previousSoil = 0;
-int previousMotion = LOW;
-int previousIR = HIGH;
+int previousMotion = LOW; // Initial state of PIR sensor
+int previousIR = HIGH;    // Initial state of IR sensor
 
 void setup() {
   Serial.begin(9600);
@@ -721,39 +721,33 @@ void setup() {
   pinMode(TRIGPIN1, OUTPUT);
   pinMode(TRIGPIN2, OUTPUT);
 
-  Serial.println("Waiting for ESP8266...");
-  delay(2000);  // Wait for ESP8266 to initialize
-
+  // Calibrating PIR sensor
   Serial.println("Calibrating PIR sensor...");
-  delay(20000);
+  delay(20000); // Calibrate for 20 seconds
   Serial.println("PIR sensor calibrated.");
 }
 
 void loop() {
   float temp = dht.readTemperature();
-  Serial.print("T:");
+  Serial.print("A1:Temperature:");
   Serial.print(temp);
-  Serial.print(",");
+  Serial.println("°C");
 
   int gas = analogRead(MQ2PIN);
-  Serial.print("G:");
-  Serial.print(gas);
-  Serial.print(",");
+  Serial.print("A2:GasLevel:");
+  Serial.println(gas);
 
   int soil = analogRead(SOILPIN);
-  Serial.print("S:");
-  Serial.print(soil);
-  Serial.print(",");
+  Serial.print("A3:SoilMoisture:");
+  Serial.println(soil);
 
   int motion = digitalRead(PIRPIN);
-  Serial.print("M:");
-  Serial.print(motion);
-  Serial.print(",");
+  Serial.print("A4:MotionDetected:");
+  Serial.println(motion);
 
   int door = digitalRead(IRPIN);
-  Serial.print("D:");
-  Serial.print(door);
-  Serial.print(",");
+  Serial.print("A5:DoorStatus:");
+  Serial.println(door);
 
   long duration1, duration2, distance;
   digitalWrite(TRIGPIN1, LOW);
@@ -771,49 +765,61 @@ void loop() {
   duration2 = pulseIn(TRIGPIN2, HIGH);
 
   distance = duration1 * 0.034 / 2;
-  Serial.print("W:");
-  Serial.print(distance);
-  Serial.println();
+  if (distance != 0 && distance <= WATER_TANK_MAX_LEVEL) {
+    Serial.print("A6:WaterLevel:");
+    Serial.print(distance);
+    Serial.println("cm");
+  }
 
   delay(2000);
 }
 
-4. Explanation of Updates
-Added Serial initialization in setup().
-Introduced commas , as delimiters to separate different sensor readings in a single line.
-Modified sensor data print statements to use abbreviated labels (T:, G:, S:, M:, D:, W:) followed by the sensor reading.
 
-5. Complete Arduino Code with Communication Functionalities
-The code provided above is already the complete Arduino code with added communication functionalities for sending sensor readings to the ESP8266.
 
-6. Complete Code with Added Communication Functionalities for ESP8266
-Here's the ESP8266 code to receive and display sensor readings from the Arduino:
+*                         ESP8266   Code
 
-              ESP8266 Copy code
-              
-#include <SoftwareSerial.h>
-
-SoftwareSerial esp8266(0, 1); // RX, TX
 
 void setup() {
-  Serial.begin(9600);
-  esp8266.begin(9600);
-  Serial.println("ESP8266 Initialized");
+  Serial.begin(9600);  // Initialize serial communication
 }
 
 void loop() {
-  if (esp8266.available()) {
-    String data = "";
-    while (esp8266.available()) {
-      char c = esp8266.read();
-      data += c;
+  if (Serial.available()) {
+    String data = Serial.readStringUntil('\n'); // Read data from Arduino until newline character
+
+    // Display only the data intended for the ESP8266
+    if (data.startsWith("A1:") || data.startsWith("A2:") || data.startsWith("A3:") || 
+        data.startsWith("A4:") || data.startsWith("A5:") || data.startsWith("A6:")) {
+      Serial.println(data);  // Print the received data to ESP8266 serial monitor
     }
-    Serial.println(data);
   }
 }
-Explanation for ESP8266 Code:
-We use the SoftwareSerial library to create a new serial port for the ESP8266.
-In the setup(), both the hardware and software serial ports are initialized.
-In the loop(), the ESP8266 continuously checks for incoming data. Once data is available, it reads the data and prints it to the Serial Monitor.
-Final Note:
-Ensure the grounds of both the Arduino and the ESP8266 are connected together. Also, cross-connect the TX and RX lines between the two devices (Arduino TX to ESP8266 RX and Arduino RX to ESP8266 TX).              
+
+
+* Explanation:
+
+Arduino Code Updates:
+Modified the data format sent over serial by adding a unique identifier (e.g., "A1:", "A2:", etc.) before each sensor reading.
+The unique identifier allows the ESP8266 to identify and display only the data intended for it.
+
+* ESP8266 Code:
+
+Reads data from the Arduino through the serial interface.
+Filters and displays only the data intended for the ESP8266 by checking the unique identifiers.
+
+* Pin Connections:
+
+Arduino:Connect TX (Transmit) of Arduino to RX (Receive) of ESP8266.
+
+Connect RX (Receive) of Arduino to TX (Transmit) of ESP8266.
+
+Make sure to connect the GND of both devices together.
+
+
+* How to Do All This:
+Upload the modified Arduino code to the Arduino board.
+Connect the Arduino board and ESP8266 as per the pin connections mentioned above.
+Upload the ESP8266 code to the ESP8266 board.
+Open the Arduino serial monitor to see the sensor data formatted with the unique identifiers.
+Open the ESP8266 serial monitor to see only the data intended for the ESP8266.
+Remember to set the correct baud rate (9600 in this example) in both codes and serial monitors for successful communication.
