@@ -3,6 +3,9 @@
 // 1 issue with ultasonic sensor 
 
 
+ * *                      // PLZ ADD THE FIREBASE FUNCTIONALITIES         ***IMP
+
+
 #include <dummy.h>
 
 #include <ESP8266WiFi.h>
