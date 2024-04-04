@@ -1229,8 +1229,7 @@ conditions {
 
   SUGGEST ANY RESISTOR THAT HAS TO BE INCLUDED IN THIS 
   name the gpios in code in  accending order 
-  provide accurate comments on everythng
-a
+  provide accurate comments on everything 
 } 
 2. WHEN THE BUTTON IS PUSHED OT SHOULD DISPLAY THE NUMBER (112 ) ALONG WITH MESSAGE DO YOU WANT TO CALL THIS NUMBER {
   THE RED LED SHOULD BLINK RAPIDLY WHEN THE PUSH BUTTON IS PUSHED 
