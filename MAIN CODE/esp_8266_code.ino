@@ -3,7 +3,7 @@
 // 1 issue with ultasonic sensor 
 
 
- * *                      // PLZ ADD THE FIREBASE FUNCTIONALITIES         ***IMP
+                     // PLZ ADD THE FIREBASE FUNCTIONALITIES         ***IMP
 
 
 #include <dummy.h>
