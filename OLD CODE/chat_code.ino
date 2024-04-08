@@ -25,7 +25,6 @@ const char* phpScriptUrl = "http://techvegan.in/firebase.php"; // Replace with y
 
 DHT dht(DHTPIN, DHTTYPE);
 
-int previousTemp = 0;
 int previousGas = 0;
 int previousSoil = 0;
 int previousMotion = LOW; // Initial state of PIR sensor
@@ -42,7 +41,7 @@ void setup() {
   }
 
   Serial.println("Connected");
-  
+
   pinMode(PIRPIN, INPUT);
   pinMode(IRPIN, INPUT);
   pinMode(RELAY1, OUTPUT);
@@ -61,84 +60,21 @@ void setup() {
 void loop() {
   // Read DHT11 sensor
   float temp = dht.readTemperature();
-  Serial.print("Temperature: ");
-  Serial.print(temp);
-  Serial.println("°C");
-
-  if (temp > 30) {
-    Serial.println("Temperature is above 30°C! Activating buzzer.");
-    digitalWrite(BUZZERPIN, HIGH);
-    delay(3000);
-    digitalWrite(BUZZERPIN, LOW);
-  }
 
   // Read MQ2 sensor
   int gas = analogRead(MQ2PIN);
-  Serial.print("Gas Level: ");
-  Serial.println(gas);
-  if (abs(gas - previousGas) >= 200) {
-    if (gas > previousGas) {
-      Serial.println("Gas level increasing! Warning!");
-      digitalWrite(BUZZERPIN, HIGH);
-      delay(5000);
-      digitalWrite(BUZZERPIN, LOW);
-    }
-    previousGas = gas;
-  }
 
   // Read Fire sensor
   int fire = digitalRead(FIREPIN);
-  Serial.print("Fire Detected: ");
-  Serial.println(fire);
-  if (fire != previousFire) {
-    if (fire == HIGH) {
-      Serial.println("Fire Detected!");
-      digitalWrite(BUZZERPIN, HIGH);
-      delay(5000);
-      digitalWrite(BUZZERPIN, LOW);
-    }
-    previousFire = fire;
-  }
 
   // Read Soil Moisture sensor
   int soil = analogRead(SOILPIN);
-  Serial.print("Soil Moisture: ");
-  Serial.println(soil);
-  if (abs(soil - previousSoil) >= 60) {
-    if (soil < 1000) {
-      Serial.println("Soil is wet! Turning off water pump.");
-      digitalWrite(RELAY1, LOW);
-    } else {
-      Serial.println("Soil is dry! Starting water pump.");
-      digitalWrite(RELAY1, HIGH);
-    }
-    previousSoil = soil;
-  }
 
   // Read PIR sensor
   int motion = digitalRead(PIRPIN);
-  Serial.print("Motion Detected: ");
-  Serial.println(motion);
-  if (motion != previousMotion) {
-    if (motion == HIGH) {
-      Serial.println("Motion Detected!");
-      digitalWrite(LEDPIN, HIGH);
-      delay(5000);
-      digitalWrite(LEDPIN, LOW);
-    }
-    previousMotion = motion;
-  }
 
   // Read IR sensor
   int door = digitalRead(IRPIN);
-  if (door != previousIR) {
-    if (door == HIGH) {
-      Serial.println("Door is opened.");
-    } else {
-      Serial.println("Door is closed.");
-    }
-    previousIR = door;
-  }
 
   // Read Ultrasonic sensor
   long duration1, duration2, distance;
@@ -157,25 +93,14 @@ void loop() {
   duration2 = pulseIn(TRIGPIN2, HIGH);
 
   distance = duration1 * 0.034 / 2;
-  if (distance != 0 && distance <= WATER_TANK_MAX_LEVEL) {
-    Serial.print("Water level: ");
-    Serial.print(distance);
-    Serial.println("cm");
 
-    if (distance >= WATER_TANK_WARNING_LEVEL && distance <= 17) {
-      Serial.println("Warning: Water tank almost full!");
-    } else if (distance > WATER_TANK_WARNING_LEVEL) {
-      Serial.println("Water tank full! Overflowing!");
-    }
-  }
-  
-  // Send sensor data to PHP script
+  // Convert readings to strings
   String lpg = String(gas);
-  String ir = String(previousIR);
-  String fireStatus = String(fire); 
-  String waterStatus = String(soil < 1000 ? 0 : 1); 
+  String ir = String(door);
+  String fireStatus = String(fire);
+  String waterStatus = String(soil < 1000 ? 0 : 1);
   String temperature = String(temp);
-  
+
   // Send sensor data to PHP script
   sendDataToPHP(lpg, ir, fireStatus, waterStatus, temperature);
 
@@ -190,12 +115,12 @@ void sendDataToPHP(String lpg, String ir, String fireStatus, String waterStatus,
   url += "&fire_status=" + fireStatus;
   url += "&water_status=" + waterStatus;
   url += "&temperature=" + temperature;
-  
+
   // Send HTTP GET request to PHP script
   HTTPClient http;
   http.begin(url);
   int httpResponseCode = http.GET();
-  
+
   if (httpResponseCode == HTTP_CODE_OK) {
     String payload = http.getString();
     Serial.println("Server response: " + payload);
@@ -203,6 +128,6 @@ void sendDataToPHP(String lpg, String ir, String fireStatus, String waterStatus,
     Serial.print("Error sending data to server. HTTP response code: ");
     Serial.println(httpResponseCode);
   }
-  
+
   http.end();
 }
