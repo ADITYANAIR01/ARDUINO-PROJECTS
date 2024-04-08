@@ -10,15 +10,15 @@ const char* phpScriptUrl = "http://techvegan.in/firebase.php"; // Replace with y
 #define DHTTYPE DHT11
 
 #define MQ2PIN 34
+#define FIREPIN 26 // Connect the fire sensor to GPIO35
 #define SOILPIN 34 // Connect the soil moisture sensor to analog pin A0
-#define IRPIN 27 // GPIO5
+#define IRPIN 27 // GPIO27
 #define PIRPIN 4 // GPIO4
 #define TRIGPIN1 33 // GPIO0
 #define TRIGPIN2 14 // GPIO14
-#define RELAYPIN 12 // GPIO12, replaced 2-channel relay with 1-channel
+#define RELAY1 12 // GPIO12 (1-channel relay)
 #define BUZZERPIN 15 // GPIO15
 #define LEDPIN 16 // GPIO16
-#define FIRE_SENSOR_PIN 26 // GPIO26, added fire sensor
 
 #define WATER_TANK_MAX_LEVEL 20 // in cm
 #define WATER_TANK_WARNING_LEVEL 17 // in cm
@@ -30,7 +30,7 @@ int previousGas = 0;
 int previousSoil = 0;
 int previousMotion = LOW; // Initial state of PIR sensor
 int previousIR = HIGH;    // Initial state of IR sensor
-int previousFireStatus = LOW; // Initial state of fire sensor
+int previousFire = LOW;   // Initial state of fire sensor
 
 void setup() {
   Serial.begin(9600);
@@ -45,12 +45,12 @@ void setup() {
 
   pinMode(PIRPIN, INPUT);
   pinMode(IRPIN, INPUT);
-  pinMode(RELAYPIN, OUTPUT);
+  pinMode(RELAY1, OUTPUT);
   pinMode(BUZZERPIN, OUTPUT);
   pinMode(LEDPIN, OUTPUT);
   pinMode(TRIGPIN1, OUTPUT);
   pinMode(TRIGPIN2, OUTPUT);
-  pinMode(FIRE_SENSOR_PIN, INPUT); // Set fire sensor as input
+  pinMode(FIREPIN, INPUT); // Fire sensor pin
 
   // Calibrating PIR sensor
   Serial.println("Calibrating PIR sensor...");
@@ -86,6 +86,20 @@ void loop() {
     previousGas = gas;
   }
 
+  // Read Fire sensor
+  int fire = digitalRead(FIREPIN);
+  Serial.print("Fire Detected: ");
+  Serial.println(fire);
+  if (fire != previousFire) {
+    if (fire == HIGH) {
+      Serial.println("Fire Detected!");
+      digitalWrite(BUZZERPIN, HIGH);
+      delay(5000);
+      digitalWrite(BUZZERPIN, LOW);
+    }
+    previousFire = fire;
+  }
+
   // Read Soil Moisture sensor
   int soil = analogRead(SOILPIN);
   Serial.print("Soil Moisture: ");
@@ -93,10 +107,10 @@ void loop() {
   if (abs(soil - previousSoil) >= 60) {
     if (soil < 1000) {
       Serial.println("Soil is wet! Turning off water pump.");
-      digitalWrite(RELAYPIN, LOW);
+      digitalWrite(RELAY1, LOW);
     } else {
       Serial.println("Soil is dry! Starting water pump.");
-      digitalWrite(RELAYPIN, HIGH);
+      digitalWrite(RELAY1, HIGH);
     }
     previousSoil = soil;
   }
@@ -124,17 +138,6 @@ void loop() {
       Serial.println("Door is closed.");
     }
     previousIR = door;
-  }
-
-  // Read Fire sensor
-  int fireStatus = digitalRead(FIRE_SENSOR_PIN);
-  if (fireStatus != previousFireStatus) {
-    if (fireStatus == HIGH) {
-      Serial.println("Fire Detected!");
-    } else {
-      Serial.println("Fire not detected.");
-    }
-    previousFireStatus = fireStatus;
   }
 
   // Read Ultrasonic sensor
@@ -166,25 +169,25 @@ void loop() {
     }
   }
 
-  // Sample sensor data, replace with actual sensor readings
+  // Send sensor data to PHP script
   String lpg = String(gas);
-  String ir = String(previousIR);
-  String fire_status = String(fireStatus); // Update fire status
-  String waterStatus = String(soil < 1000 ? 0 : 1); // Assuming soil moisture below 1000 indicates dry soil
+  String ir = String(door);
+  String fireStatus = String(fire);
+  String waterStatus = String(soil < 1000 ? 0 : 1);
   String temperature = String(temp);
 
   // Send sensor data to PHP script
-  sendDataToPHP(lpg, ir, fire_status, waterStatus, temperature);
+  sendDataToPHP(lpg, ir, fireStatus, waterStatus, temperature);
 
   delay(20000); // Adjust delay according to your requirements
 }
 
-void sendDataToPHP(String lpg, String ir, String fire_status, String waterStatus, String temperature) {
+void sendDataToPHP(String lpg, String ir, String fireStatus, String waterStatus, String temperature) {
   // Construct URL with sensor data
   String url = phpScriptUrl;
   url += "?lpg=" + lpg;
   url += "&ir=" + ir;
-  url += "&fire_status=" + fire_status; // Add fire status to URL
+  url += "&fire_status=" + fireStatus;
   url += "&water_status=" + waterStatus;
   url += "&temperature=" + temperature;
 
