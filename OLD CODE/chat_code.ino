@@ -6,15 +6,15 @@ const char* ssid = "NAIR'S";
 const char* password = "adityanair52004";
 const char* phpScriptUrl = "http://techvegan.in/firebase.php"; // Replace with your PHP script URL
 
-#define DHTPIN 4 // Pin D4 corresponds to GPIO2 on ESP8266
+#define DHTPIN 2 // Pin D4 corresponds to GPIO2 on ESP8266
 #define DHTTYPE DHT11
 
 #define MQ2PIN 34
-#define FIREPIN 35 // Connect the fire sensor to GPIO35
+#define FIREPIN 26 // Connect the fire sensor to GPIO35
 #define SOILPIN 34 // Connect the soil moisture sensor to analog pin A0
 #define IRPIN 27 // GPIO27
 #define PIRPIN 4 // GPIO4
-#define TRIGPIN1 0 // GPIO0
+#define TRIGPIN1 33 // GPIO0
 #define TRIGPIN2 14 // GPIO14
 #define RELAY1 12 // GPIO12 (1-channel relay)
 #define BUZZERPIN 15 // GPIO15
