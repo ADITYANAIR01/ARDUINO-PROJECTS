@@ -1,7 +1,7 @@
 #define PIN 9
 #define TYPE DHT11
-#define RX 13 // Connect ESP's TX PIN to Arduino's Pin No. 12
-#define TX 12 // Don't Connect
+#define RX 13 // 
+#define TX 12 // 
 
 #include<DHT.h>
 #include<SoftwareSerial.h>
@@ -59,9 +59,9 @@ void loop() {
 
   // Fire Status
   if (digitalRead(firePin) == HIGH) {
-    fireStatus = "NO fIRE";
+    fireStatus = "No_Fire";
   } else {
-    fireStatus = "FIRE DETECTED ";
+    fireStatus = "Fire_Detected";
   }
 
   // Motion Status
@@ -74,13 +74,14 @@ void loop() {
   // IR Sensor Status
   irStatus = digitalRead(irPin);
   if (irStatus == LOW) {
-    irSensorStatus = "Door is closed";
+    irSensorStatus = "Door_is_Closed";
   } else {
-    irSensorStatus = "Door is opened";
+    irSensorStatus = "Door_is_Opened";
   }
 
   // Temperature
-  temperature = dht.readTemperature();
+  //temperature = dht.readTemperature();
+  temperature = 29.0;
 
   // Soil Moisture
   soilPer = map(analogRead(soilPin), 1023, 0, 0, 100);
