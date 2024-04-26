@@ -1,3 +1,0 @@
-5v - vcc
-GND - GND 
-DATA - DIGITAL 2 
