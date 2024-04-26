@@ -1,5 +1,5 @@
-const int ledPin = 9;  // Changed from buzzerPin to ledPin
-const int fireSensorPin = 8;
+const int ledPin = 9;  // pin ledPin
+const int fireSensorPin = 8; // pin Fire sensor
 
 void setup()
 {
