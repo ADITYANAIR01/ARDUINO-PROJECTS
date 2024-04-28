@@ -1,12 +1,12 @@
-// Define pin assignments
-#define LDR_PIN A0   // LDR connected to analog pin A0
-#define LED_PIN 2    // LED connected to digital pin 2
+
+#define LDR_PIN A0   
+#define LED_PIN 2    
 
 void setup() {
-  pinMode(LDR_PIN, INPUT);   // Set LDR pin as input
-  pinMode(LED_PIN, OUTPUT);  // Set LED pin as output
+  pinMode(LDR_PIN, INPUT);   
+  pinMode(LED_PIN, OUTPUT);  
   
-  Serial.begin(9600);  // Initialize serial communication
+  Serial.begin(9600);  
 }
 
 void loop() {
