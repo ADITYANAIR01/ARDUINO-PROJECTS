@@ -15,10 +15,10 @@ void loop() {
   Serial.println(ldr_readings);
   
   if (ldr_readings <= 100) {
-    digitalWrite(LED_PIN, LOW);  
+    digitalWrite(LED_PIN, LOW);  // LED OFF
     Serial.println("there is  light :) ");
   } else {
-    digitalWrite(LED_PIN, HIGH);   
+    digitalWrite(LED_PIN, HIGH);   // LED ON
     Serial.println("there is no light :( ");
   }
 
