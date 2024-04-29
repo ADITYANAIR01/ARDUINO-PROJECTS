@@ -1,27 +1,23 @@
-const int ledPin = 9;  // pin ledPin
-const int fireSensorPin = 8; // pin Fire sensor
+# define  FIREPIN 2
+# define LED 3 
 
-void setup()
-{
-  Serial.begin(9600);
-  pinMode(ledPin, OUTPUT);  // Changed from buzzerPin to ledPin
-  pinMode(fireSensorPin, INPUT);
+void setup(){
+  pinMode(FIREPIN, INPUT);
+  pinMode(LED, OUTPUT);
+
 }
 
-void loop()
-{
-  int fireValue = digitalRead(fireSensorPin);
-  Serial.println(fireValue);
-  
-  if(fireValue == 0)
-  {
-    digitalWrite(ledPin, HIGH);  // Changed from buzzerPin to ledPin
-    delay(200);
+void loop() {
+  Serial.begin(9600);
+ char firestatus = digitalRead(FIREPIN);
+  if(firestatus == LOW){
+    Serial.println("THERE IS FIRE !!! ");
+    digitalWrite(LED, HIGH);
+    delay(2000);
   }
-  else
-  {
-    digitalWrite(ledPin, LOW);  // Changed from buzzerPin to ledPin
+  else{
+    Serial.println("There is no fire :)  ");
+    digitalWrite(LED, LOW);
+    delay(2000);
   }
-  
-  delay(500);
 }
