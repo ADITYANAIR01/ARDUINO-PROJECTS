@@ -1,29 +1,22 @@
-int ir=7; // PINS WE HAVE CONNECTED TO 
-int buzzer=8;
-int x;
+# define IR_PIN 2
 
-void setup() 
-{
+void setup() {
+  pinMode(IR_PIN, INPUT);
   Serial.begin(9600);
-  pinMode(7,INPUT);
- pinMode(8,OUTPUT);
- 
+
+
 }
 
-void loop() 
-{
-x=digitalRead(ir);
-Serial.println(x);
-delay(300);
+void loop() {
+  int ir_status = digitalRead(IR_PIN);
+  if(ir_status == 1){
+    Serial.println("The door is opened ");
+    delay(1000);
 
-if(x==1)      //Sensor not activated
-{
-  digitalWrite(8,LOW);
-}
-
-else         //Sensor Activated[when x is 0]
-{
-  digitalWrite(8,HIGH);
-}
+  }
+  else{
+    Serial.println("The door is closed ");
+    delay(1000);
+  }
 
 }
