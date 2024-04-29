@@ -1,27 +1,22 @@
-#include <DHT.h>
-#define DHTPIN 2     // what pin we're connected to
-#define DHTTYPE DHT11   // DHT 11
+#include <DHT.h> //LIBRARY
+#define DHTPIN 2     
+#define DHTTYPE DHT11   
 DHT dht(DHTPIN, DHTTYPE);
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("DHT temp test!");
-
-  dht.begin();
+  dht.begin();  //begin the sensor data collection
 }
 
 void loop() {
-  delay(1000);
+  delay(2000);
 
-  float t = dht.readTemperature();
+  float temp = dht.readTemperature();
 
-  // Check if the read failed and exit early (to try again).
-  if (isnan(t)) {
+  if (isnan(temp)) {  // ERROR HANDLING
     Serial.println("Failed to read from DHT sensor!");
     return;
   }
-
-  Serial.print("Temperature: ");
-  Serial.print(t);
-  Serial.println(" *C");
+Serial.print(temp);
+Serial.println("  * Celsius ");
 }
