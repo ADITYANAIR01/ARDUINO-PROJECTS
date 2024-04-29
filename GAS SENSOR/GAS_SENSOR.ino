@@ -1,20 +1,25 @@
-const int MQ_PIN = A0;  //pin A0
+# define MQ2 A0
+# define LED 3
 
-void setup() {
-  // Set the pin mode to INPUT
-  pinMode(MQ_PIN, INPUT);
-  
-  // Initialize serial communication
-  Serial.begin(9600);
+void setup(){
+  pinMode(MQ2 , INPUT);
+  pinMode(LED, OUTPUT);
+
 }
 
-void loop() {
-  // Read the analog value from the MQ sensor
-  int mqSensorValue = analogRead(MQ_PIN);
-  
-  // Print the sensor value to the serial monitor
-  Serial.println(mqSensorValue);
-  
-  // Delay for 500 milliseconds
-  delay(500);
+void loop(){
+  Serial.begin(9600);
+  Serial.println(analogRead(MQ2));
+ int gasstatus = analogRead(MQ2);
+ if(gasstatus <=100 ){
+  Serial.println("THERE IS NO GAS LEAK :) ");
+  digitalWrite(LED, LOW);
+  delay(1000);
+ }
+
+ else {
+  Serial.println("THERE IS GAS LEAK !!! ");
+  digitalWrite(LED, HIGH);
+  delay(1000);
+ }
 }
