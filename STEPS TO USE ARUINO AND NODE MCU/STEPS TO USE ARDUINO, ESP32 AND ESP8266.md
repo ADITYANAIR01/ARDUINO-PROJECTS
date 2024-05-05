@@ -18,8 +18,8 @@ https://espressif.github.io/arduino-esp32/package_esp32_index.json
 
 8. AFTER THE CODE COMPILES HOLD DOWN BOOT BUTTON IF THE ESP32 TO COMPLETE UPLOADING OF THE CODE 
 
-    
-     
+9. MAC address of ESP 32 08:B6:1F:BE:20:A4 
+
   *   FOR NODE MCU (ESP 8266)
 
 1. Install esptool (OPTIONAL)
@@ -40,3 +40,5 @@ https://espressif.github.io/arduino-esp32/package_esp32_index.json
 6. VERIFY AND COMPILE CODE
 
 7. AFTER COMPILATION WHILE UPLOADING THE CODE HOLD DOWN THE BOOT BUTTON 
+
+8. MAC address of ESP 8266 A4:CF:12:FD:65:02
