@@ -1,7 +1,7 @@
 #define PIN 9
 #define TYPE DHT11
 #define RX 13 // 
-#define TX 12 // 
+#define TX 12 // to RX
 
 #include<DHT.h>
 #include<SoftwareSerial.h>
