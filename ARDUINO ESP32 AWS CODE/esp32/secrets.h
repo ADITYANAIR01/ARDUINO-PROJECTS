@@ -1,6 +1,6 @@
 #include <pgmspace.h>
 
-#define SECRET_SSID "THE NAIR'S"
+#define SECRET_SSID "NAIR'S"
 #define SECRET_PASS "adityanair52004"
 
 #define THINGNAME "ESP32_DATA"
