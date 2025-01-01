@@ -59,7 +59,7 @@ void loop() {
   waterLevel = String(distancePer);
 
   // Fire Status
-  fireStatus = (digitalRead(FIRE_PIN) == HIGH) ? "No_Fire" : "Fire_Detected";
+  fireStatus = (digitalRead(FIRE_PIN) == LOW ) ? "Fire_Detected" : "No_Fire" ;
 
   // Motion Status
   motionStatus = (digitalRead(MOTION_PIN) == HIGH) ? "Motion_Detected" : "No_Motion";
@@ -74,11 +74,12 @@ void loop() {
   lpgStatus = (digitalRead(LPG_PIN) == LOW) ? "LPG_Leak_Detected" : "LPG_No_Leakage";
 
   // Tilt Sensor
-  tiltStatus = (digitalRead(TILT_PIN) == LOW) ? "Tilt_Detected" : "No_Tilt";
+  tiltStatus = (digitalRead(TILT_PIN) == HIGH ) ? "Tilt_Detected" : "No_Tilt";
 
   // Vibration Sensor
-  int vibrationValue = analogRead(VIBRATION_PIN);
-  vibrationStatus = (vibrationValue > VIBRATION_THRESHOLD) ? "Vibration_Detected" : "No_Vibration";
+   int vibrationValue = digitalRead(VIBRATION_PIN); // Read digital value
+  vibrationStatus = (vibrationValue == HIGH) ? "Vibration_Detected" : "No_Vibration";
+
 
   // Light Sensor
   int lightValue = analogRead(LDR_PIN);
