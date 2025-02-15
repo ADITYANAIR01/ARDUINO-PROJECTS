@@ -5,7 +5,7 @@
 #include "addons/RTDBHelper.h"
 #include "time.h"
 
-// Define serial pins for communication with Arduino
+// Serial communication pins with Arduino
 #define RX_PIN 16 // Connect to TX of Arduino
 #define TX_PIN 17 // Connect to RX of Arduino
 
@@ -21,13 +21,7 @@
 FirebaseData fbdo;
 FirebaseAuth auth;
 FirebaseConfig config;
-
-// Serial Communication with Arduino
 HardwareSerial arduinoSerial(1); // Use UART1
-
-// Timing Variables
-unsigned long lastSendTime = 0;
-const long sendInterval = 2000; // 2 seconds
 
 bool firebaseReady = false;
 
@@ -36,17 +30,15 @@ void connectWiFi() {
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     
     unsigned long startAttemptTime = millis();
-    while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 15000) { // 15s timeout
+    while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 15000) {
         Serial.print(".");
         delay(500);
     }
 
     if (WiFi.status() == WL_CONNECTED) {
         Serial.println("\nConnected to Wi-Fi!");
-        Serial.print("IP Address: ");
-        Serial.println(WiFi.localIP());
     } else {
-        Serial.println("\nFailed to connect to Wi-Fi. Restarting...");
+        Serial.println("\nFailed to connect. Restarting...");
         ESP.restart();
     }
 }
@@ -67,56 +59,48 @@ void initFirebase() {
     Firebase.reconnectWiFi(true);
 }
 
-String getTimestamp() {
-    struct tm timeInfo;
-    if (!getLocalTime(&timeInfo)) {
-        Serial.println("Failed to obtain time");
-        return "";
-    }
-
-    char timeString[20];
-    strftime(timeString, sizeof(timeString), "%Y-%m-%d %H:%M:%S", &timeInfo);
-    return String(timeString);
-}
-
 void setup() {
     Serial.begin(115200);
     arduinoSerial.begin(9600, SERIAL_8N1, RX_PIN, TX_PIN);
-
     connectWiFi();
     initFirebase();
-
-    // Configure time synchronization
-    configTime(0, 0, "pool.ntp.org", "time.nist.gov");
-    Serial.println("Time synchronization initialized.");
 }
 
 void loop() {
     if (arduinoSerial.available()) {
         String message = arduinoSerial.readStringUntil('\n');
-        message.trim(); // Remove extra spaces or newlines
+        message.trim();
 
         if (message.length() > 0) {
             Serial.println("Received from Arduino: " + message);
 
-            if (Firebase.ready() && firebaseReady) {
-                String timestamp = getTimestamp();
-                if (timestamp != "") {
-                    FirebaseJson json;
-                    json.set("value", message);
-                    json.set("timestamp", timestamp);
-
-                    if (Firebase.RTDB.setJSON(&fbdo, "sensor_data/data", &json)) {
-                        Serial.println("Data sent to Firebase successfully");
-                    } else {
-                        Serial.println("Failed to send data to Firebase. Reason: " + fbdo.errorReason());
-                    }
+            // Parse data from Arduino (CSV format)
+            String values[9];
+            int index = 0;
+            for (int i = 0; i < message.length(); i++) {
+                if (message[i] == ',') {
+                    index++;
+                } else {
+                    values[index] += message[i];
                 }
+            }
+
+            if (Firebase.ready() && firebaseReady) {
+                Firebase.RTDB.setString(&fbdo, "/sensor_data/water_level", values[0]);
+                Firebase.RTDB.setString(&fbdo, "/sensor_data/fire_status", values[1]);
+                Firebase.RTDB.setString(&fbdo, "/sensor_data/motion_status", values[2]);
+                Firebase.RTDB.setString(&fbdo, "/sensor_data/ir_status", values[3]);
+                Firebase.RTDB.setString(&fbdo, "/sensor_data/temperature", values[4]);
+                Firebase.RTDB.setString(&fbdo, "/sensor_data/lpg_status", values[5]);
+                Firebase.RTDB.setString(&fbdo, "/sensor_data/tilt_status", values[6]);
+                Firebase.RTDB.setString(&fbdo, "/sensor_data/vibration_status", values[7]);
+                Firebase.RTDB.setString(&fbdo, "/sensor_data/light_level", values[8]);
+
+                Serial.println("Data sent to Firebase successfully");
             }
         }
     }
 
-    // Ensure Wi-Fi stays connected
     if (WiFi.status() != WL_CONNECTED) {
         Serial.println("Wi-Fi disconnected. Reconnecting...");
         connectWiFi();
