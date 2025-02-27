@@ -2,23 +2,23 @@
 #include <SoftwareSerial.h>
 
 // Pin definitions
-#define FIRE_PIN 1
-#define IR_PIN 2
-#define DHT_PIN 3
-#define LPG_PIN 4
-#define MOTION_PIN 6
-#define TRIG_PIN 7
-#define ECHO_PIN 8
-#define TILT_PIN 9
-#define VIBRATION_PIN 10
-#define LED_PIN 11
+#define FIRE_PIN 3
+#define IR_PIN 4
+#define DHT_PIN 5
+#define LPG_PIN A3    // Changed to A3 for analog MQ2 sensor
+#define MOTION_PIN 7
+#define TRIG_PIN 8
+#define ECHO_PIN 9
+#define TILT_PIN 10
 #define LDR_PIN A1
-
+#define VIBRATION_PIN A2
+#define LED_PIN 11
 #define RX_PIN 13
 #define TX_PIN 12
 
 #define DHT_TYPE DHT11
-#define VIBRATION_THRESHOLD 500 // Adjust this value based on your sensor's sensitivity
+#define VIBRATION_THRESHOLD 120  // Threshold for vibration intensity
+#define LPG_THRESHOLD 130        // Added threshold for LPG detection
 
 DHT dht(DHT_PIN, DHT_TYPE);
 SoftwareSerial esp(RX_PIN, TX_PIN);
@@ -35,7 +35,7 @@ void setup() {
   
   pinMode(FIRE_PIN, INPUT);
   pinMode(IR_PIN, INPUT);
-  pinMode(LPG_PIN, INPUT);
+  pinMode(LPG_PIN, INPUT);    // Set as input for analog reading
   pinMode(MOTION_PIN, INPUT);
   pinMode(TRIG_PIN, OUTPUT);
   pinMode(ECHO_PIN, INPUT);
@@ -59,7 +59,7 @@ void loop() {
   waterLevel = String(distancePer);
 
   // Fire Status
-  fireStatus = (digitalRead(FIRE_PIN) == LOW) ? "No_Fire" : "Fire_Detected";
+  fireStatus = (digitalRead(FIRE_PIN) == LOW) ? "Fire_Detected" : "No_Fire";
 
   // Motion Status
   motionStatus = (digitalRead(MOTION_PIN) == HIGH) ? "Motion_Detected" : "No_Motion";
@@ -70,14 +70,15 @@ void loop() {
   // Temperature
   temperature = dht.readTemperature();
 
-  // LPG
-  lpgStatus = (digitalRead(LPG_PIN) == LOW) ? "LPG_Leak_Detected" : "LPG_No_Leakage";
+  // LPG (Updated logic with analog reading)
+  int gasValue = analogRead(LPG_PIN);
+  lpgStatus = (gasValue <= LPG_THRESHOLD) ? "LPG_Leak_Detected" : "LPG_No_Leakage"  ;
 
   // Tilt Sensor
   tiltStatus = (digitalRead(TILT_PIN) == LOW) ? "Tilt_Detected" : "No_Tilt";
 
   // Vibration Sensor
-  int vibrationValue = digitalRead(VIBRATION_PIN);
+  int vibrationValue = analogRead(VIBRATION_PIN);
   vibrationStatus = (vibrationValue > VIBRATION_THRESHOLD) ? "Vibration_Detected" : "No_Vibration";
 
   // Light Sensor
