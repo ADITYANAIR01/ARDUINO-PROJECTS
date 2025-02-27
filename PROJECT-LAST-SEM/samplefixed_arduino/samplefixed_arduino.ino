@@ -5,20 +5,20 @@
 #define FIRE_PIN 3
 #define IR_PIN 4
 #define DHT_PIN 5
-#define LPG_PIN A3    // Changed to A3 for analog MQ2 sensor
+#define VIBRATION_PIN 6    // Changed from A2 to 6 for digital reading
 #define MOTION_PIN 7
 #define TRIG_PIN 8
 #define ECHO_PIN 9
 #define TILT_PIN 10
-#define LDR_PIN A1
-#define VIBRATION_PIN A2
 #define LED_PIN 11
 #define RX_PIN 13
 #define TX_PIN 12
+#define LDR_PIN A1
+#define LPG_PIN A2
+
 
 #define DHT_TYPE DHT11
-#define VIBRATION_THRESHOLD 120  // Threshold for vibration intensity
-#define LPG_THRESHOLD 130        // Added threshold for LPG detection
+#define LPG_THRESHOLD 130    // Threshold for LPG detection
 
 DHT dht(DHT_PIN, DHT_TYPE);
 SoftwareSerial esp(RX_PIN, TX_PIN);
@@ -35,12 +35,12 @@ void setup() {
   
   pinMode(FIRE_PIN, INPUT);
   pinMode(IR_PIN, INPUT);
-  pinMode(LPG_PIN, INPUT);    // Set as input for analog reading
+  pinMode(LPG_PIN, INPUT);
   pinMode(MOTION_PIN, INPUT);
   pinMode(TRIG_PIN, OUTPUT);
   pinMode(ECHO_PIN, INPUT);
   pinMode(TILT_PIN, INPUT);
-  pinMode(VIBRATION_PIN, INPUT);
+  pinMode(VIBRATION_PIN, INPUT);    // Set as input for digital reading
   pinMode(LED_PIN, OUTPUT);
   pinMode(LDR_PIN, INPUT);
 }
@@ -70,16 +70,15 @@ void loop() {
   // Temperature
   temperature = dht.readTemperature();
 
-  // LPG (Updated logic with analog reading)
+  // LPG
   int gasValue = analogRead(LPG_PIN);
-  lpgStatus = (gasValue <= LPG_THRESHOLD) ? "LPG_Leak_Detected" : "LPG_No_Leakage"  ;
+  lpgStatus = (gasValue <= LPG_THRESHOLD) ? "LPG_Leak_Detected" : "LPG_No_Leakage";
 
   // Tilt Sensor
   tiltStatus = (digitalRead(TILT_PIN) == LOW) ? "Tilt_Detected" : "No_Tilt";
 
-  // Vibration Sensor
-  int vibrationValue = analogRead(VIBRATION_PIN);
-  vibrationStatus = (vibrationValue > VIBRATION_THRESHOLD) ? "Vibration_Detected" : "No_Vibration";
+  // Vibration Sensor (Updated to digital reading)
+  vibrationStatus = (digitalRead(VIBRATION_PIN) == HIGH) ? "Vibration_Detected" : "No_Vibration";
 
   // Light Sensor
   int lightValue = analogRead(LDR_PIN);
