@@ -1,98 +1,122 @@
+#include <Arduino.h>
 #include <WiFi.h>
-#include <ArduinoJson.h>
 #include <Firebase_ESP_Client.h>
 
-#define RXD2 16
-#define TXD2 17
+// Firebase helpers
+#include "addons/TokenHelper.h"
+#include "addons/RTDBHelper.h"
 
-const char* ssid = "NOTHING";
-const char* password = "123456789";
+// Network credentials
+#define WIFI_SSID "NOTHING"
+#define WIFI_PASSWORD "123456789"
 
+// Firebase credentials
 #define API_KEY "AIzaSyAyzdrFz-dMg3MZNu1ti9jWh-WSveRgIgw"
 #define DATABASE_URL "https://iot-sensor-app-4dee7-default-rtdb.asia-southeast1.firebasedatabase.app/"
-#define SENSOR_DATA_PATH "sensor_data" // Firebase RTDB path
 
+// Firebase objects
 FirebaseData fbdo;
 FirebaseAuth auth;
 FirebaseConfig config;
 
-void connectWiFi() {
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
-  Serial.println("Connecting to Wi-Fi");
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("\nWiFi connected");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
-}
+// Serial2 pins for Arduino communication
+#define RXD2 16
+#define TXD2 17
 
-void connectFirebase() {
+bool firebaseReady = false;
+
+void setup() {
+  Serial.begin(9600);  // For ESP32 Serial Monitor
+  Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);  // For Arduino communication
+
+  // Connect to Wi-Fi
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  Serial.print("Connecting to Wi-Fi");
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.println("\nConnected to Wi-Fi");
+
+  // Configure Firebase
   config.api_key = API_KEY;
   config.database_url = DATABASE_URL;
-  bool signupOK = Firebase.signUp(&config, &auth, "", "");
-  if (!signupOK) {
+  config.token_status_callback = tokenStatusCallback;
+
+  // Anonymous signup
+  if (Firebase.signUp(&config, &auth, "", "")) {
+    Serial.println("Firebase signup successful");
+    firebaseReady = true;
+  } else {
     Serial.printf("Firebase signup failed: %s\n", config.signer.signupError.message.c_str());
   }
+
   Firebase.begin(&config, &auth);
   Firebase.reconnectWiFi(true);
 }
 
-void uploadToFirebase(FirebaseJson &json) {
-  if (Firebase.RTDB.setJSON(&fbdo, SENSOR_DATA_PATH, &json)) {
+void uploadToFirebase(String data) {
+  if (!firebaseReady) return;
+
+  // Remove trailing newline or spaces
+  data.trim();
+
+  // Parse the string into 9 values
+  String values[9];
+  int index = 0;
+  int commaIndex;
+  while ((commaIndex = data.indexOf(',')) != -1 && index < 9) {
+    values[index] = data.substring(0, commaIndex);
+    data = data.substring(commaIndex + 1);
+    index++;
+  }
+  if (index == 8 && data.length() > 0) {
+    values[8] = data; // Last value
+  } else {
+    Serial.println("Invalid data format - Expected 9 values. Received: " + String(index + 1));
+    Serial.println("Raw data: " + data);
+    return;
+  }
+
+  // Debugging: Print received values
+  Serial.println("--- Received Sensor Data ---");
+  Serial.println("Water Level: " + values[0]);
+  Serial.println("Motion: " + values[1]);
+  Serial.println("Temperature: " + values[2]);
+  Serial.println("Fire: " + values[3]);
+  Serial.println("LPG: " + values[4]);
+  Serial.println("IR Sensor: " + values[5]);
+  Serial.println("Tilt: " + values[6]);
+  Serial.println("Vibration: " + values[7]);
+  Serial.println("Light: " + values[8]);
+  Serial.println("----------------------------");
+
+  // Upload to Firebase
+  Firebase.RTDB.setInt(&fbdo, "sensors/water_level", values[0].toInt());
+  Firebase.RTDB.setString(&fbdo, "sensors/motion", values[1]);
+  Firebase.RTDB.setFloat(&fbdo, "sensors/temperature", values[2].toFloat());
+  Firebase.RTDB.setString(&fbdo, "sensors/fire", values[3]);
+  Firebase.RTDB.setString(&fbdo, "sensors/lpg", values[4]);
+  Firebase.RTDB.setString(&fbdo, "sensors/ir_sensor", values[5]);
+  Firebase.RTDB.setString(&fbdo, "sensors/tilt", values[6]);
+  Firebase.RTDB.setString(&fbdo, "sensors/vibration", values[7]);
+  Firebase.RTDB.setInt(&fbdo, "sensors/light", values[8].toInt());
+  Firebase.RTDB.setInt(&fbdo, "sensors/timestamp", millis() / 1000);
+
+  if (fbdo.httpCode() == 200) {
     Serial.println("Data uploaded successfully");
   } else {
-    Serial.printf("Firebase upload failed: %s\n", fbdo.errorReason().c_str());
+    Serial.printf("Upload failed: %s\n", fbdo.errorReason().c_str());
   }
-}
-
-void processData(String data) {
-  StaticJsonDocument<400> doc;
-  FirebaseJson json;
-  String values[9] = {"", "", "", "", "", "", "", "", ""};
-  int valueIndex = 0;
-  for (size_t i = 0; i < data.length(); i++) {
-    char c = data.charAt(i);
-    if (c == ',') {
-      if (valueIndex < 8) valueIndex++;
-      else values[8] += c;
-    } else {
-      values[valueIndex] += c;
-    }
-  }
-  doc["water_level"] = values[0];
-  doc["motion"] = values[1];
-  doc["temperature"] = values[2];
-  doc["fire"] = values[3];
-  doc["lpg"] = values[4];
-  doc["ir_sensor"] = values[5];
-  doc["tilt"] = values[6];
-  doc["vibration"] = values[7];
-  doc["light"] = values[8];
-  String jsonStr;
-  serializeJson(doc, jsonStr);
-  json.setJsonData(jsonStr);
-  Serial.println("JSON Message:");
-  Serial.println(jsonStr);
-  uploadToFirebase(json);
-}
-
-void setup() {
-  Serial.begin(115200);
-  Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
-  connectWiFi();
-  connectFirebase();
 }
 
 void loop() {
   if (Serial2.available()) {
     String data = Serial2.readStringUntil('\n');
-    data.trim();
     if (data.length() > 0) {
-      Serial.println("Received from Arduino: " + data);
-      processData(data);
+      Serial.println("Raw data received: " + data);
+      uploadToFirebase(data);
     }
   }
+  delay(100); // Small delay to avoid overwhelming the loop
 }
