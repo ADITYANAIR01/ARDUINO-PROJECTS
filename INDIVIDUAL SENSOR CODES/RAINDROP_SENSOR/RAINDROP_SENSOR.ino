@@ -1,4 +1,4 @@
-#define RAIN 34  // Using GPIO34, an analog input pin on ESP32
+#define RAIN 34  // Using GPIO34, an analog input pin on ESP32 and A3
 
 // Rain threshold constants (adjustable based on your sensor)
 const int NO_RAIN_THRESHOLD = 3900;
