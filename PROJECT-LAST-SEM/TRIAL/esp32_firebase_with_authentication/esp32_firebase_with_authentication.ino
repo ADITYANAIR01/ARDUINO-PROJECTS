@@ -88,13 +88,13 @@ void uploadToFirebase(String data) {
   String values[10];
   int index = 0;
   int commaIndex;
-  while ((commaIndex = data.indexOf(',')) != -1 && index < 9) {
+  while ((commaIndex = data.indexOf(',')) != -1 && index < 10) {
     values[index] = data.substring(0, commaIndex);
     data = data.substring(commaIndex + 1);
     index++;
   }
   if (index == 9 && data.length() > 0) {
-    values[9] = data; // Last value (rain status)
+    values[9] = data; // Last value
   } else {
     Serial.println("Invalid data format - Expected 10 values. Received: " + String(index + 1));
     Serial.println("Raw data: " + data);
@@ -125,7 +125,7 @@ void uploadToFirebase(String data) {
   Firebase.RTDB.setString(&fbdo, "sensors/tilt", values[6]);
   Firebase.RTDB.setString(&fbdo, "sensors/vibration", values[7]);
   Firebase.RTDB.setInt(&fbdo, "sensors/light", values[8].toInt());
-  Firebase.RTDB.setString(&fbdo, "sensors/rain", values[9]);  // Upload rain status
+  Firebase.RTDB.setString(&fbdo, "sensors/rain", values[9]);  // Added rain sensor
   Firebase.RTDB.setInt(&fbdo, "sensors/timestamp", millis() / 1000);
   
   if (fbdo.httpCode() == 200) {

@@ -19,13 +19,10 @@
 
 #define DHT_TYPE DHT11
 #define LPG_THRESHOLD 130    
-
-// Rain threshold constants (adjusted for 10-bit ADC)
-const int NO_RAIN_THRESHOLD = 974;
-const int LIGHT_RAIN_THRESHOLD = 924;
-const int MODERATE_RAIN_THRESHOLD = 700;
-const int HYSTERESIS = 20;
-const int SAMPLE_COUNT = 5;
+// Rain threshold constants for 10-bit ADC (0-1023 range)
+const int RAIN_THRESHOLD = 750;    // Light rain threshold
+const int HEAVY_RAIN_THRESHOLD = 500;  // Heavy rain threshold
+const int SAMPLE_COUNT = 10;  // Number of samples for rain sensor averaging
 
 DHT dht(DHT_PIN, DHT_TYPE);
 SoftwareSerial esp(RX_PIN, TX_PIN);
@@ -34,15 +31,6 @@ String waterLevel, fireStatus, motionStatus, lpgStatus, irSensorStatus, tiltStat
 float temperature = 0.0;
 long duration;
 int distanceCm, distancePer;
-
-int getAveragedReading() {
-  long total = 0;
-  for (int i = 0; i < SAMPLE_COUNT; i++) {
-    total += analogRead(RAIN);
-    delay(100);  // Small delay between samples
-  }
-  return total / SAMPLE_COUNT;  // Return averaged value
-}
 
 void setup() {
   Serial.begin(9600);  // For Serial Monitor
@@ -60,6 +48,30 @@ void setup() {
   pinMode(LED_PIN, OUTPUT);
   pinMode(LDR_PIN, INPUT);
   pinMode(RAIN, INPUT);  // Set rain sensor pin as input
+  Serial.println("Rain Sensor Initialized");
+}
+
+// Function to get averaged rain sensor reading
+int getAveragedReading() {
+  long total = 0;
+  for (int i = 0; i < SAMPLE_COUNT; i++) {
+    total += analogRead(RAIN);
+    delay(100);  // Small delay between samples
+  }
+  return total / SAMPLE_COUNT;  // Return averaged value
+}
+
+// Function to determine rain status
+void setRainStatus(int reading) {
+  if (reading >= RAIN_THRESHOLD) {
+    rainStatus = "No_Rain";
+  } 
+  else if (reading >= HEAVY_RAIN_THRESHOLD) {
+    rainStatus = "Light_Rain";
+  } 
+  else {
+    rainStatus = "Heavy_Rain";
+  }
 }
 
 void loop() {
@@ -103,16 +115,8 @@ void loop() {
   lightStatus = String(map(lightValue, 0, 1023, 0, 100));
 
   // Rain Sensor
-  int rain_reading = getAveragedReading();
-  if (rain_reading >= NO_RAIN_THRESHOLD) {
-    rainStatus = "No_Rain";
-  } else if (rain_reading >= LIGHT_RAIN_THRESHOLD - HYSTERESIS) {
-    rainStatus = "Light_Rain";
-  } else if (rain_reading >= MODERATE_RAIN_THRESHOLD - HYSTERESIS) {
-    rainStatus = "Moderate_Rain";
-  } else {
-    rainStatus = "Heavy_Rain";
-  }
+  int rainReading = getAveragedReading();
+  setRainStatus(rainReading);
 
   // Print to Arduino Serial Monitor
   Serial.println("--- Sensor Readings ---");
@@ -131,7 +135,8 @@ void loop() {
   // Send data to ESP32 (now 10 values)
   String data = waterLevel + "," + motionStatus + "," + String(temperature) + "," + 
                 fireStatus + "," + lpgStatus + "," + irSensorStatus + "," + 
-                tiltStatus + "," + vibrationStatus + "," + lightStatus + "," + rainStatus + "\n";
+                tiltStatus + "," + vibrationStatus + "," + lightStatus + "," + 
+                rainStatus + "\n";
   esp.print(data);
 
   delay(5000); // Update every 5 seconds
