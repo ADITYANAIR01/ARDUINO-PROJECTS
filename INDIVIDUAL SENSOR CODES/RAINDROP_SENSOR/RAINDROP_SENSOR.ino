@@ -1,15 +1,13 @@
-#define RAIN 34  // Using GPIO34, an analog input pin on ESP32 and A3
-
-// Rain threshold constants (adjustable based on your sensor)
-const int NO_RAIN_THRESHOLD = 3900;
-const int LIGHT_RAIN_THRESHOLD = 3700;
-const int MODERATE_RAIN_THRESHOLD = 2800;
+#define RAIN A3  // 
+const int NO_RAIN_THRESHOLD = 900;    // Adjusted for 0-1023 range
+const int LIGHT_RAIN_THRESHOLD = 800;  // Adjusted for 0-1023 range
+const int MODERATE_RAIN_THRESHOLD = 600; // Adjusted for 0-1023 range
 // Heavy rain is anything below MODERATE_RAIN_THRESHOLD
 
 // Number of samples to average for smoothing
 const int SAMPLE_COUNT = 5;
 // Hysteresis to prevent flickering between states (optional)
-const int HYSTERESIS = 50;
+const int HYSTERESIS = 20;  // Smaller value due to smaller ADC range
 
 void setup() {
   Serial.begin(9600);  // Initialize serial communication at 9600 baud
