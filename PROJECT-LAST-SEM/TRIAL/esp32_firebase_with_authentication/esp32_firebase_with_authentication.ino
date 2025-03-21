@@ -84,19 +84,19 @@ void uploadToFirebase(String data) {
   // Remove trailing newline or spaces
   data.trim();
   
-  // Parse the string into 10 values
-  String values[10];
+  // Parse the string into 11 values (added button)
+  String values[11];
   int index = 0;
   int commaIndex;
-  while ((commaIndex = data.indexOf(',')) != -1 && index < 10) {
+  while ((commaIndex = data.indexOf(',')) != -1 && index < 11) {
     values[index] = data.substring(0, commaIndex);
     data = data.substring(commaIndex + 1);
     index++;
   }
-  if (index == 9 && data.length() > 0) {
-    values[9] = data; // Last value
+  if (index == 10 && data.length() > 0) {
+    values[10] = data; // Last value (button)
   } else {
-    Serial.println("Invalid data format - Expected 10 values. Received: " + String(index + 1));
+    Serial.println("Invalid data format - Expected 11 values. Received: " + String(index + 1));
     Serial.println("Raw data: " + data);
     return;
   }
@@ -113,6 +113,7 @@ void uploadToFirebase(String data) {
   Serial.println("Vibration: " + values[7]);
   Serial.println("Light: " + values[8]);
   Serial.println("Rain: " + values[9]);
+  Serial.println("Button: " + values[10]);  // Added button
   Serial.println("----------------------------");
   
   // Upload to Firebase
@@ -125,7 +126,8 @@ void uploadToFirebase(String data) {
   Firebase.RTDB.setString(&fbdo, "sensors/tilt", values[6]);
   Firebase.RTDB.setString(&fbdo, "sensors/vibration", values[7]);
   Firebase.RTDB.setInt(&fbdo, "sensors/light", values[8].toInt());
-  Firebase.RTDB.setString(&fbdo, "sensors/rain", values[9]);  // Added rain sensor
+  Firebase.RTDB.setString(&fbdo, "sensors/rain", values[9]);
+  Firebase.RTDB.setString(&fbdo, "sensors/button", values[10]);  // Added button
   Firebase.RTDB.setInt(&fbdo, "sensors/timestamp", millis() / 1000);
   
   if (fbdo.httpCode() == 200) {

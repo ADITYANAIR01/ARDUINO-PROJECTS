@@ -2,6 +2,7 @@
 #include <SoftwareSerial.h>
 
 // Pin definitions
+#define BUTTON_PIN 2 // Added button pin definition
 #define FIRE_PIN 3
 #define IR_PIN 4
 #define DHT_PIN 5
@@ -20,6 +21,7 @@
 #define DHT_TYPE DHT11
 #define LPG_THRESHOLD 130    
 // Rain threshold constants for 10-bit ADC (0-1023 range)
+
 const int RAIN_THRESHOLD = 750;    // Light rain threshold
 const int HEAVY_RAIN_THRESHOLD = 500;  // Heavy rain threshold
 const int SAMPLE_COUNT = 10;  // Number of samples for rain sensor averaging
@@ -27,7 +29,7 @@ const int SAMPLE_COUNT = 10;  // Number of samples for rain sensor averaging
 DHT dht(DHT_PIN, DHT_TYPE);
 SoftwareSerial esp(RX_PIN, TX_PIN);
 
-String waterLevel, fireStatus, motionStatus, lpgStatus, irSensorStatus, tiltStatus, vibrationStatus, lightStatus, rainStatus;
+String waterLevel, fireStatus, motionStatus, lpgStatus, irSensorStatus, tiltStatus, vibrationStatus, lightStatus, rainStatus, buttonStatus;
 float temperature = 0.0;
 long duration;
 int distanceCm, distancePer;
@@ -48,7 +50,7 @@ void setup() {
   pinMode(LED_PIN, OUTPUT);
   pinMode(LDR_PIN, INPUT);
   pinMode(RAIN, INPUT);  // Set rain sensor pin as input
-  Serial.println("Rain Sensor Initialized");
+  pinMode(BUTTON_PIN, INPUT);  // Added button pin setup
 }
 
 // Function to get averaged rain sensor reading
@@ -75,7 +77,7 @@ void setRainStatus(int reading) {
 }
 
 void loop() {
-  // Water Level (Ultrasonic Sensor)
+ // Water Level (Ultrasonic Sensor)
   digitalWrite(TRIG_PIN, LOW);
   delayMicroseconds(2);
   digitalWrite(TRIG_PIN, HIGH);
@@ -86,7 +88,6 @@ void loop() {
   distancePer = map(distanceCm, 10, 0, 0, 100);
   distancePer = constrain(distancePer, 0, 100);
   waterLevel = String(distancePer);
-
   // Fire Status
   fireStatus = (digitalRead(FIRE_PIN) == LOW) ? "Fire_Detected" : "No_Fire";
 
@@ -118,6 +119,9 @@ void loop() {
   int rainReading = getAveragedReading();
   setRainStatus(rainReading);
 
+  // Button Status
+  buttonStatus = (digitalRead(BUTTON_PIN) == HIGH) ? "Button_OFF" : "Button_ON";
+
   // Print to Arduino Serial Monitor
   Serial.println("--- Sensor Readings ---");
   Serial.println("Water Level: " + waterLevel + "%");
@@ -130,13 +134,14 @@ void loop() {
   Serial.println("Vibration: " + vibrationStatus);
   Serial.println("Light: " + lightStatus + "%");
   Serial.println("Rain: " + rainStatus);
+  Serial.println("Button: " + buttonStatus);  // Added button status print
   Serial.println("-----------------------");
 
-  // Send data to ESP32 (now 10 values)
+  // Send data to ESP32 (now 11 values including button status)
   String data = waterLevel + "," + motionStatus + "," + String(temperature) + "," + 
                 fireStatus + "," + lpgStatus + "," + irSensorStatus + "," + 
                 tiltStatus + "," + vibrationStatus + "," + lightStatus + "," + 
-                rainStatus + "\n";
+                rainStatus + "," + buttonStatus + "\n";
   esp.print(data);
 
   delay(5000); // Update every 5 seconds
