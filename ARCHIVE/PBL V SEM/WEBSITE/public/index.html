@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Home Sensor Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.8.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.8.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.8.1/firebase-database.js"></script>
+    <style>
+        :root {
+            --primary: #3498db;
+            --secondary: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+            --background: #f5f7fa;
+            --text: #333;
+            --card-bg: white;
+            --progress-bg: #eee;
+            --shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        body.dark-mode {
+            --background: #1a1a1a;
+            --text: #ecf0f1;
+            --card-bg: #2c2c2c;
+            --progress-bg: #333;
+            --shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            transition: background-color 0.5s ease;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--progress-bg);
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--dark);
+        }
+        .logo i {
+            color: var(--primary);
+            margin-right: 10px;
+        }
+        .last-updated {
+            font-size: 14px;
+            color: #666;
+        }
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 18px;
+            color: white;
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #555;
+        }
+        .card-value {
+            font-size: 28px;
+            font-weight: bold;
+            margin: 10px 0;
+            transition: color 0.3s ease;
+        }
+        .card-status {
+            font-size: 14px;
+            color: #666;
+        }
+        .status-icon {
+            margin-right: 5px;
+            transition: color 0.3s ease;
+        }
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        .chart-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            padding: 20px;
+        }
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        .animated-progress {
+            height: 10px;
+            border-radius: 5px;
+            margin: 20px 0;
+            overflow: hidden;
+            background: var(--progress-bg);
+        }
+        .progress-bar {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 1s ease;
+            width: 0;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--progress-bg);
+            color: #666;
+            font-size: 14px;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .pulse {
+            animation: pulse 0.5s ease-in-out;
+        }
+        .popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .popup.show {
+            display: flex;
+            opacity: 1;
+        }
+        .popup-content {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            max-width: 400px;
+            width: 90%;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+        .popup-content.show {
+            transform: scale(1);
+        }
+        .popup-content h2 {
+            color: var(--danger);
+            margin-bottom: 10px;
+        }
+        .popup-content p {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        .popup-content .fire-logo {
+            font-size: 50px;
+            color: var(--danger);
+            animation: flicker 1s infinite;
+        }
+        @keyframes flicker {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .popup-content .close-btn {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .popup-content .close-btn:hover {
+            background: #c0392b;
+        }
+        .emergency-mode {
+            background-color: #ffcccc;
+            animation: emergencyBlink 1s infinite;
+        }
+        @keyframes emergencyBlink {
+            0% { background-color: #ffcccc; }
+            50% { background-color: #ff6666; }
+            100% { background-color: #ffcccc; }
+        }
+        .emergency-mode .card {
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.7);
+        }
+        .theme-toggle {
+            cursor: pointer;
+            font-size: 24px;
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Login Form -->
+        <div id="login-container">
+            <form id="login-form">
+                <div style="text-align: center; padding: 20px;">
+                    <label for="input-email"><b>Email</b></label><br>
+                    <input type="text" placeholder="Enter Email" id="input-email" required style="padding: 8px; margin: 5px; width: 200px;"><br>
+                    <label for="input-password"><b>Password</b></label><br>
+                    <input type="password" placeholder="Enter Password" id="input-password" required style="padding: 8px; margin: 5px; width: 200px;"><br>
+                    <button type="submit" style="padding: 10px 20px; background-color: var(--primary); color: white; border: none; border-radius: 5px; cursor: pointer;">Login</button>
+                    <p id="error-message" style="color: red; margin-top: 10px;"></p>
+                </div>
+            </form>
+        </div>
+
+        <!-- Authentication Bar -->
+        <div id="authentication-bar" style="display: none; text-align: right; padding: 10px; background-color: var(--progress-bg);">
+            <p>Logged in as: <span id="user-details"></span> <a href="#" id="logout-link" style="color: var(--primary);">(logout)</a></p>
+        </div>
+
+        <!-- Dashboard Container -->
+        <div id="dashboard-container" style="display: none;">
+            <header>
+                <div class="logo">
+                    <i class="fas fa-home"></i> Smart Home Monitor
+                </div>
+                <div class="theme-toggle" onclick="toggleTheme()">
+                    <i class="fas fa-moon"></i>
+                </div>
+                <div class="last-updated" id="lastUpdated">
+                    Last updated: Just now
+                </div>
+            </header>
+            
+            <div class="dashboard">
+                <!-- Water Level Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon" style="background-color: var(--primary);">
+                            <i class="fas fa-water"></i>
+                        </div>
+                        <div class="card-title">Water Level</div>
+                    </div>
+                    <div class="card-value" id="waterLevel">0%</div>
+                    <div class="animated-progress">
+                        <div class="progress-bar" id="waterLevelBar" style="background: var(--primary);"></div>
+                    </div>
+                    <div class="card-status">
+                        <span class="status-icon" id="waterLevelIcon"><i class="fas fa-tint"></i></span>
+                        <span id="waterLevelStatus">Normal</span>
+                    </div>
+                </div>
+                
+                <!-- Temperature Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon" style="background-color: var(--warning);">
+                            <i class="fas fa-thermometer-half"></i>
+                        </div>
+                        <div class="card-title">Temperature</div>
+                    </div>
+                    <div class="card-value" id="temperature">0°C</div>
+                    <div class="animated-progress">
+                        <div class="progress-bar" id="temperatureBar" style="background: var(--warning);"></div>
+                    </div>
+                    <div class="card-status">
+                        <span class="status-icon" id="temperatureIcon"><i class="fas fa-thermometer-half"></i></span>
+                        <span id="temperatureStatus">Normal</span>
+                    </div>
+                </div>
+                
+                <!-- Light Level Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon" style="background-color: #f1c40f;">
+                            <i class="fas fa-lightbulb"></i>
+                        </div>
+                        <div class="card-title">Light Level</div>
+                    </div>
+                    <div class="card-value" id="lightLevel">0%</div>
+                    <div class="animated-progress">
+                        <div class="progress-bar" id="lightLevelBar" style="background: #f1c40f;"></div>
+                    </div>
+                    <div class="card-status">
+                        <span class="status-icon" id="lightLevelIcon"><i class="fas fa-sun"></i></span>
+                        <span id="lightLevelStatus">Dark</span>
+                    </div>
+                </div>
+                
+                <!-- Fire Status Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon" style="background-color: var(--danger);">
+                            <i class="fas fa-fire"></i>
+                        </div>
+                        <div class="card-title">Fire Status</div>
+                    </div>
+                    <div class="card-value">
+                        <span class="status-badge" id="fireStatusBadge" style="background-color: #27ae60;">No Fire</span>
+                    </div>
+                    <div class="card-status" style="margin-top: 20px;">
+                        <span class="status-icon" id="fireStatusIcon"><i class="fas fa-check-circle"></i></span>
+                        <span id="fireStatusText">All clear</span>
+                    </div>
+                </div>
+                
+                <!-- Motion Status Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon" style="background-color: var(--secondary);">
+                            <i class="fas fa-walking"></i>
+                        </div>
+                        <div class="card-title">Motion Status</div>
+                    </div>
+                    <div class="card-value">
+                        <span class="status-badge" id="motionStatusBadge" style="background-color: #7f8c8d;">No Motion</span>
+                    </div>
+                    <div class="card-status" style="margin-top: 20px;">
+                        <span class="status-icon" id="motionStatusIcon"><i class="fas fa-pause-circle"></i></span>
+                        <span id="motionStatusText">No movement detected</span>
+                    </div>
+                </div>
+                
+                <!-- Door Status Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon" style="background-color: #9b59b6;">
+                            <i class="fas fa-door-open"></i>
+                        </div>
+                        <div class="card-title">Door Status</div>
+                    </div>
+                    <div class="card-value">
+                        <span class="status-badge" id="doorStatusBadge" style="background-color: #27ae60;">Closed</span>
+                    </div>
+                    <div class="card-status" style="margin-top: 20px;">
+                        <span class="status-icon" id="doorStatusIcon"><i class="fas fa-lock"></i></span>
+                        <span id="doorStatusText">Door is secure</span>
+                    </div>
+                </div>
+                
+                <!-- LPG Status Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon" style="background-color: #e67e22;">
+                            <i class="fas fa-burn"></i>
+                        </div>
+                        <div class="card-title">LPG Status</div>
+                    </div>
+                    <div class="card-value">
+                        <span class="status-badge" id="lpgStatusBadge" style="background-color: #27ae60;">No Leakage</span>
+                    </div>
+                    <div class="card-status" style="margin-top: 20px;">
+                        <span class="status-icon" id="lpgStatusIcon"><i class="fas fa-check-circle"></i></span>
+                        <span id="lpgStatusText">Air quality normal</span>
+                    </div>
+                </div>
+                
+                <!-- Tilt Status Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon" style="background-color: #16a085;">
+                            <i class="fas fa-level-down-alt"></i>
+                        </div>
+                        <div class="card-title">Tilt Status</div>
+                    </div>
+                    <div class="card-value">
+                        <span class="status-badge" id="tiltStatusBadge" style="background-color: #27ae60;">No Tilt</span>
+                    </div>
+                    <div class="card-status" style="margin-top: 20px;">
+                        <span class="status-icon" id="tiltStatusIcon"><i class="fas fa-check-circle"></i></span>
+                        <span id="tiltStatusText">Structure stable</span>
+                    </div>
+                </div>
+                
+                <!-- Vibration Status Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon" style="background-color: #8e44ad;">
+                            <i class="fas fa-wave-square"></i>
+                        </div>
+                        <div class="card-title">Vibration Status</div>
+                    </div>
+                    <div class="card-value">
+                        <span class="status-badge" id="vibrationStatusBadge" style="background-color: #27ae60;">No Vibration</span>
+                    </div>
+                    <div class="card-status" style="margin-top: 20px;">
+                        <span class="status-icon" id="vibrationStatusIcon"><i class="fas fa-check-circle"></i></span>
+                        <span id="vibrationStatusText">All quiet</span>
+                    </div>
+                </div>
+                
+                <!-- Emergency Button Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon" style="background-color: var(--danger);">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="card-title">Emergency Button</div>
+                    </div>
+                    <div class="card-value">
+                        <span class="status-badge" id="buttonStatusBadge" style="background-color: #27ae60;">OFF</span>
+                    </div>
+                    <div class="card-status" style="margin-top: 20px;">
+                        <span class="status-icon" id="buttonStatusIcon"><i class="fas fa-check-circle"></i></span>
+                        <span id="buttonStatusText">No Emergency</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="charts-container">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div class="chart-title">Temperature History</div>
+                    </div>
+                    <canvas id="temperatureChart"></canvas>
+                </div>
+                
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <div class="chart-title">Sensor Activities</div>
+                    </div>
+                    <canvas id="sensorActivitiesChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="footer">
+                <p>Smart Home Monitoring System • <span id="currentYear"></span></p>
+            </div>
+        </div>
+        
+        <!-- Fire Popup -->
+        <div class="popup" id="firePopup">
+            <div class="popup-content">
+                <h2>Fire Detected!</h2>
+                <i class="fas fa-fire fire-logo"></i>
+                <p>Emergency! Please call Fire Station at 101 immediately.</p>
+                <button class="close-btn" onclick="closePopup('firePopup')">Close</button>
+            </div>
+        </div>
+        
+        <!-- Emergency Button Popup -->
+        <div class="popup" id="emergencyPopup">
+            <div class="popup-content" style="background: #ffe6e6;">
+                <h2>Emergency Alert!</h2>
+                <i class="fas fa-exclamation-triangle fire-logo" style="color: var(--danger);"></i>
+                <p>The emergency button has been pressed. Please check the situation immediately.</p>
+                <button class="close-btn" onclick="closePopup('emergencyPopup')">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Initialize charts
+        const temperatureCtx = document.getElementById('temperatureChart').getContext('2d');
+        const sensorActivitiesCtx = document.getElementById('sensorActivitiesChart').getContext('2d');
+        
+        function generateTimeLabels(count) {
+            const labels = [];
+            for (let i = count; i >= 0; i--) {
+                const d = new Date();
+                d.setMinutes(d.getMinutes() - i * 10);
+                labels.push(d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
+            }
+            return labels;
+        }
+        
+        const temperatureChart = new Chart(temperatureCtx, {
+            type: 'line',
+            data: {
+                labels: generateTimeLabels(6),
+                datasets: [{
+                    label: 'Temperature (°C)',
+                    data: Array(7).fill(0),
+                    borderColor: '#f39c12',
+                    backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: false, min: 15, max: 40 } }
+            }
+        });
+        
+        const sensorActivitiesChart = new Chart(sensorActivitiesCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Motion', 'Door', 'Fire', 'LPG', 'Tilt', 'Vibration'],
+                datasets: [{
+                    label: 'Activities (last hour)',
+                    data: [0, 0, 0, 0, 0, 0],
+                    backgroundColor: ['#2ecc71', '#9b59b6', '#e74c3c', '#e67e22', '#16a085', '#8e44ad']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+            }
+        });
+
+        // Emergency Mode Functions
+        function activateEmergencyMode() {
+            document.body.classList.add('emergency-mode');
+        }
+
+        function deactivateEmergencyMode() {
+            document.body.classList.remove('emergency-mode');
+        }
+
+        // Popup Close Function
+        function closePopup(popupId) {
+            const popup = document.getElementById(popupId);
+            popup.classList.remove('show');
+            setTimeout(() => {
+                popup.style.display = 'none';
+            }, 300);
+        }
+
+        // Update Dashboard Function
+        function updateDashboard(data) {
+            const waterLevel = data.water_level || 0;
+            const motion = data.motion || "No_Motion";
+            const temperature = data.temperature || 0;
+            const fire = data.fire || "No_Fire";
+            const lpg = data.lpg || "LPG_No_Leakage";
+            const irSensor = data.ir_sensor || "Door_is_Closed";
+            const tilt = data.tilt || "No_Tilt";
+            const vibration = data.vibration || "No_Vibration";
+            const light = data.light || 0;
+            const button = data.button || "Button_OFF";
+
+            // Water Level
+            document.getElementById('waterLevel').textContent = waterLevel + '%';
+            document.getElementById('waterLevelBar').style.width = waterLevel + '%';
+            if (waterLevel > 80) {
+                document.getElementById('waterLevelStatus').textContent = 'High';
+                document.getElementById('waterLevelIcon').innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+            } else if (waterLevel < 20) {
+                document.getElementById('waterLevelStatus').textContent = 'Low';
+                document.getElementById('waterLevelIcon').innerHTML = '<i class="fas fa-exclamation-circle"></i>';
+            } else {
+                document.getElementById('waterLevelStatus').textContent = 'Normal';
+                document.getElementById('waterLevelIcon').innerHTML = '<i class="fas fa-check-circle"></i>';
+            }
+            
+            // Temperature
+            document.getElementById('temperature').textContent = temperature + '°C';
+            const tempPercentage = Math.min(Math.max(temperature * 2, 0), 100);
+            document.getElementById('temperatureBar').style.width = tempPercentage + '%';
+            if (temperature > 30) {
+                document.getElementById('temperatureStatus').textContent = 'High';
+                document.getElementById('temperatureIcon').innerHTML = '<i class="fas fa-fire"></i>';
+            } else if (temperature < 15) {
+                document.getElementById('temperatureStatus').textContent = 'Low';
+                document.getElementById('temperatureIcon').innerHTML = '<i class="fas fa-snowflake"></i>';
+            } else {
+                document.getElementById('temperatureStatus').textContent = 'Normal';
+                document.getElementById('temperatureIcon').innerHTML = '<i class="fas fa-check-circle"></i>';
+            }
+            
+            // Light Level
+            document.getElementById('lightLevel').textContent = light + '%';
+            document.getElementById('lightLevelBar').style.width = light + '%';
+            if (light > 70) {
+                document.getElementById('lightLevelStatus').textContent = 'Bright';
+                document.getElementById('lightLevelIcon').innerHTML = '<i class="fas fa-sun"></i>';
+            } else if (light < 30) {
+                document.getElementById('lightLevelStatus').textContent = 'Dark';
+                document.getElementById('lightLevelIcon').innerHTML = '<i class="fas fa-moon"></i>';
+            } else {
+                document.getElementById('lightLevelStatus').textContent = 'Normal';
+                document.getElementById('lightLevelIcon').innerHTML = '<i class="fas fa-cloud-sun"></i>';
+            }
+            
+            // Fire Status
+            const fireStatusBadge = document.getElementById('fireStatusBadge');
+            const fireStatusIcon = document.getElementById('fireStatusIcon');
+            const fireStatusText = document.getElementById('fireStatusText');
+            if (fire === 'Fire_Detected') {
+                fireStatusBadge.textContent = 'Fire Detected';
+                fireStatusBadge.style.backgroundColor = '#e74c3c';
+                fireStatusIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+                fireStatusText.textContent = 'Emergency! Fire detected';
+                sensorActivitiesChart.data.datasets[0].data[2]++;
+                const firePopup = document.getElementById('firePopup');
+                firePopup.style.display = 'flex';
+                setTimeout(() => firePopup.classList.add('show'), 10);
+            } else {
+                fireStatusBadge.textContent = 'No Fire';
+                fireStatusBadge.style.backgroundColor = '#27ae60';
+                fireStatusIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
+                fireStatusText.textContent = 'All clear';
+                const firePopup = document.getElementById('firePopup');
+                firePopup.classList.remove('show');
+                setTimeout(() => firePopup.style.display = 'none', 300);
+            }
+            
+            // Motion Status
+            const motionStatusBadge = document.getElementById('motionStatusBadge');
+            const motionStatusIcon = document.getElementById('motionStatusIcon');
+            const motionStatusText = document.getElementById('motionStatusText');
+            if (motion === 'Motion_Detected') {
+                motionStatusBadge.textContent = 'Motion Detected';
+                motionStatusBadge.style.backgroundColor = '#3498db';
+                motionStatusIcon.innerHTML = '<i class="fas fa-running"></i>';
+                motionStatusText.textContent = 'Movement detected';
+                sensorActivitiesChart.data.datasets[0].data[0]++;
+            } else {
+                motionStatusBadge.textContent = 'No Motion';
+                motionStatusBadge.style.backgroundColor = '#7f8c8d';
+                motionStatusIcon.innerHTML = '<i class="fas fa-pause-circle"></i>';
+                motionStatusText.textContent = 'No movement detected';
+            }
+            
+            // Door Status
+            const doorStatusBadge = document.getElementById('doorStatusBadge');
+            const doorStatusIcon = document.getElementById('doorStatusIcon');
+            const doorStatusText = document.getElementById('doorStatusText');
+            if (irSensor === 'Door_is_Opened') {
+                doorStatusBadge.textContent = 'Open';
+                doorStatusBadge.style.backgroundColor = '#3498db';
+                doorStatusIcon.innerHTML = '<i class="fas fa-door-open"></i>';
+                doorStatusText.textContent = 'Door is open';
+                sensorActivitiesChart.data.datasets[0].data[1]++;
+            } else {
+                doorStatusBadge.textContent = 'Closed';
+                doorStatusBadge.style.backgroundColor = '#27ae60';
+                doorStatusIcon.innerHTML = '<i class="fas fa-door-closed"></i>';
+                doorStatusText.textContent = 'Door is secure';
+            }
+            
+            // LPG Status
+            const lpgStatusBadge = document.getElementById('lpgStatusBadge');
+            const lpgStatusIcon = document.getElementById('lpgStatusIcon');
+            const lpgStatusText = document.getElementById('lpgStatusText');
+            if (lpg === 'LPG_Leak_Detected') {
+                lpgStatusBadge.textContent = 'Leak Detected';
+                lpgStatusBadge.style.backgroundColor = '#e74c3c';
+                lpgStatusIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+                lpgStatusText.textContent = 'Warning! Gas leak detected';
+                sensorActivitiesChart.data.datasets[0].data[3]++;
+            } else {
+                lpgStatusBadge.textContent = 'No Leakage';
+                lpgStatusBadge.style.backgroundColor = '#27ae60';
+                lpgStatusIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
+                lpgStatusText.textContent = 'Air quality normal';
+            }
+            
+            // Tilt Status
+            const tiltStatusBadge = document.getElementById('tiltStatusBadge');
+            const tiltStatusIcon = document.getElementById('tiltStatusIcon');
+            const tiltStatusText = document.getElementById('tiltStatusText');
+            if (tilt === 'Tilt_Detected') {
+                tiltStatusBadge.textContent = 'Tilt Detected';
+                tiltStatusBadge.style.backgroundColor = '#e74c3c';
+                tiltStatusIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+                tiltStatusText.textContent = 'Warning! Structure tilted';
+                sensorActivitiesChart.data.datasets[0].data[4]++;
+            } else {
+                tiltStatusBadge.textContent = 'No Tilt';
+                tiltStatusBadge.style.backgroundColor = '#27ae60';
+                tiltStatusIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
+                tiltStatusText.textContent = 'Structure stable';
+            }
+            
+            // Vibration Status
+            const vibrationStatusBadge = document.getElementById('vibrationStatusBadge');
+            const vibrationStatusIcon = document.getElementById('vibrationStatusIcon');
+            const vibrationStatusText = document.getElementById('vibrationStatusText');
+            if (vibration === 'Vibration_Detected') {
+                vibrationStatusBadge.textContent = 'Vibration Detected';
+                vibrationStatusBadge.style.backgroundColor = '#e74c3c';
+                vibrationStatusIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+                vibrationStatusText.textContent = 'Warning! Vibration detected';
+                sensorActivitiesChart.data.datasets[0].data[5]++;
+            } else {
+                vibrationStatusBadge.textContent = 'No Vibration';
+                vibrationStatusBadge.style.backgroundColor = '#27ae60';
+                vibrationStatusIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
+                vibrationStatusText.textContent = 'All quiet';
+            }
+            
+            // Emergency Button Status
+            const buttonStatusBadge = document.getElementById('buttonStatusBadge');
+            const buttonStatusIcon = document.getElementById('buttonStatusIcon');
+            const buttonStatusText = document.getElementById('buttonStatusText');
+            const emergencyPopup = document.getElementById('emergencyPopup');
+            if (button === 'Button_ON') {
+                buttonStatusBadge.textContent = 'ON';
+                buttonStatusBadge.style.backgroundColor = '#e74c3c';
+                buttonStatusIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+                buttonStatusText.textContent = 'Emergency Activated';
+                activateEmergencyMode();
+                emergencyPopup.style.display = 'flex';
+                setTimeout(() => emergencyPopup.classList.add('show'), 10);
+            } else {
+                buttonStatusBadge.textContent = 'OFF';
+                buttonStatusBadge.style.backgroundColor = '#27ae60';
+                buttonStatusIcon.innerHTML = '<i class="fas fa-check-circle"></i>';
+                buttonStatusText.textContent = 'No Emergency';
+                deactivateEmergencyMode();
+                emergencyPopup.classList.remove('show');
+                setTimeout(() => emergencyPopup.style.display = 'none', 300);
+            }
+            
+            // Update Charts
+            temperatureChart.data.datasets[0].data.push(temperature);
+            temperatureChart.data.datasets[0].data.shift();
+            temperatureChart.data.labels.push(new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}));
+            temperatureChart.data.labels.shift();
+            temperatureChart.update();
+            sensorActivitiesChart.update();
+            
+            // Pulse Animation
+            document.querySelectorAll('.card-value').forEach(el => {
+                el.classList.add('pulse');
+                setTimeout(() => el.classList.remove('pulse'), 500);
+            });
+            
+            document.getElementById('lastUpdated').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+        }
+        
+        // Set Current Year
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+        // Firebase Initialization
+        const firebaseConfig = {
+            apiKey: "",
+            authDomain: "",
+            databaseURL: "",
+            projectId: "",
+            storageBucket: "",
+            messagingSenderId: "",
+            appId: ""
+        };
+        firebase.initializeApp(firebaseConfig);
+
+        // Authentication Handling
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('input-email').value;
+            const password = document.getElementById('input-password').value;
+            firebase.auth().signInWithEmailAndPassword(email, password)
+                .then(() => {
+                    document.getElementById('login-container').style.display = 'none';
+                    document.getElementById('dashboard-container').style.display = 'block';
+                })
+                .catch((error) => {
+                    document.getElementById('error-message').textContent = error.message;
+                });
+        });
+
+        document.getElementById('logout-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            firebase.auth().signOut();
+        });
+
+        firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+                document.getElementById('login-container').style.display = 'none';
+                document.getElementById('authentication-bar').style.display = 'block';
+                document.getElementById('dashboard-container').style.display = 'block';
+                document.getElementById('user-details').textContent = user.email;
+
+                const dbRef = firebase.database().ref('sensors');
+                dbRef.on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) updateDashboard(data);
+                }, (error) => console.error("Database error:", error));
+            } else {
+                document.getElementById('login-container').style.display = 'block';
+                document.getElementById('authentication-bar').style.display = 'none';
+                document.getElementById('dashboard-container').style.display = 'none';
+            }
+        });
+
+        // Dark Mode Toggle
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const isDarkMode = document.body.classList.contains('dark-mode');
+            localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+            temperatureChart.data.datasets[0].borderColor = isDarkMode ? '#ffcc80' : '#f39c12';
+            temperatureChart.update();
+        }
+
+        // Load Saved Theme
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+            temperatureChart.data.datasets[0].borderColor = '#ffcc80';
+            temperatureChart.update();
+        }
+    </script>
+</body>
+</html>
