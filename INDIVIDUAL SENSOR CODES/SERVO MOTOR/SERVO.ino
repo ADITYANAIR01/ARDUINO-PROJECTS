@@ -1,6 +1,7 @@
 #include <Servo.h>
 Servo s1;
 
+// Yellow = Pin 9 , Red = 5V , Brown = GND
 void setup() 
 {
   s1.attach(9);
